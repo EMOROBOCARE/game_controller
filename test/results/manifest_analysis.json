@@ -1,0 +1,1186 @@
+{
+  "total_records_manifest": 57,
+  "total_records_state": 65,
+  "total_records_events": 64,
+  "unique_manifest_hashes": 57,
+  "steps": [
+    {
+      "ts": 3260.155600186,
+      "step": "startup_menu",
+      "systemState": "IDLE",
+      "gameState": "",
+      "hash": "74fd459cf28b0d68",
+      "mode": "menu",
+      "phase": "",
+      "questionType": "",
+      "questionText": "",
+      "optionsCount": 0,
+      "inputDisabled": false,
+      "controls": {
+        "showPause": false,
+        "showResume": false,
+        "showStop": false,
+        "showReset": false,
+        "showSkipPhase": false
+      }
+    },
+    {
+      "ts": 3260.193815348,
+      "step": "run_a_phase_intro",
+      "systemState": "GAME",
+      "gameState": "PHASE_INTRO",
+      "hash": "31ab89395b0477d5",
+      "mode": "game",
+      "phase": "P1",
+      "questionType": "phase_intro",
+      "questionText": "Fase P1: Vamos a jugar a los colores.",
+      "optionsCount": 0,
+      "inputDisabled": true,
+      "controls": {
+        "showPause": true,
+        "showResume": false,
+        "showStop": true,
+        "showReset": true,
+        "showSkipPhase": true
+      }
+    },
+    {
+      "ts": 3262.285963116,
+      "step": "run_a_question_present_q1",
+      "systemState": "GAME",
+      "gameState": "QUESTION_PRESENT",
+      "hash": "e38b1917967b8b4d",
+      "mode": "game",
+      "phase": "P1",
+      "questionType": "multiple_choice",
+      "questionText": "Elige la opción correcta.",
+      "optionsCount": 2,
+      "inputDisabled": true,
+      "controls": {
+        "showPause": true,
+        "showResume": false,
+        "showStop": true,
+        "showReset": true,
+        "showSkipPhase": true
+      }
+    },
+    {
+      "ts": 3262.359217792,
+      "step": "run_a_wait_input_q1",
+      "systemState": "GAME",
+      "gameState": "WAIT_INPUT",
+      "hash": "3d40675325111184",
+      "mode": "game",
+      "phase": "P1",
+      "questionType": "multiple_choice",
+      "questionText": "Elige la opción correcta.",
+      "optionsCount": 2,
+      "inputDisabled": false,
+      "controls": {
+        "showPause": true,
+        "showResume": false,
+        "showStop": true,
+        "showReset": true,
+        "showSkipPhase": true
+      }
+    },
+    {
+      "ts": 3262.473077566,
+      "step": "run_a_paused",
+      "systemState": "PAUSED",
+      "gameState": "",
+      "hash": "c041e8accb7ddc6a",
+      "mode": "game",
+      "phase": "P1",
+      "questionType": "multiple_choice",
+      "questionText": "Elige la opción correcta.",
+      "optionsCount": 2,
+      "inputDisabled": true,
+      "controls": {
+        "showPause": false,
+        "showResume": true,
+        "showStop": true,
+        "showReset": true,
+        "showSkipPhase": true
+      }
+    },
+    {
+      "ts": 3262.585881037,
+      "step": "run_a_resumed",
+      "systemState": "GAME",
+      "gameState": "WAIT_INPUT",
+      "hash": "a62919a87dc208e4",
+      "mode": "game",
+      "phase": "P1",
+      "questionType": "multiple_choice",
+      "questionText": "Elige la opción correcta.",
+      "optionsCount": 2,
+      "inputDisabled": false,
+      "controls": {
+        "showPause": true,
+        "showResume": false,
+        "showStop": true,
+        "showReset": true,
+        "showSkipPhase": true
+      }
+    },
+    {
+      "ts": 3262.698946,
+      "step": "run_a_fail_l1_phase_P1",
+      "systemState": "GAME",
+      "gameState": "FAIL_L1",
+      "hash": "b460f05cb8787748",
+      "mode": "game",
+      "phase": "P1",
+      "questionType": "fail_l1",
+      "questionText": "Inténtalo de nuevo.",
+      "optionsCount": 2,
+      "inputDisabled": false,
+      "controls": {
+        "showPause": true,
+        "showResume": false,
+        "showStop": true,
+        "showReset": true,
+        "showSkipPhase": true
+      }
+    },
+    {
+      "ts": 3264.720736328,
+      "step": "run_a_correct_phase_P1",
+      "systemState": "GAME",
+      "gameState": "CORRECT",
+      "hash": "d4ac90a8e4bfcc5e",
+      "mode": "game",
+      "phase": "P1",
+      "questionType": "correct",
+      "questionText": "¡Muy bien!",
+      "optionsCount": 0,
+      "inputDisabled": true,
+      "controls": {
+        "showPause": true,
+        "showResume": false,
+        "showStop": true,
+        "showReset": true,
+        "showSkipPhase": true
+      }
+    },
+    {
+      "ts": 3265.33285397,
+      "step": "run_a_question_present_q2",
+      "systemState": "GAME",
+      "gameState": "QUESTION_PRESENT",
+      "hash": "3525c3629b4cfea1",
+      "mode": "game",
+      "phase": "P2",
+      "questionType": "speech",
+      "questionText": "¿Qué color es? Es el color green.",
+      "optionsCount": 0,
+      "inputDisabled": true,
+      "controls": {
+        "showPause": true,
+        "showResume": false,
+        "showStop": true,
+        "showReset": true,
+        "showSkipPhase": true
+      }
+    },
+    {
+      "ts": 3265.500084373,
+      "step": "run_a_wait_input_q2",
+      "systemState": "GAME",
+      "gameState": "WAIT_INPUT",
+      "hash": "433eef629b5e880c",
+      "mode": "game",
+      "phase": "P2",
+      "questionType": "speech",
+      "questionText": "¿Qué color es? Es el color green.",
+      "optionsCount": 0,
+      "inputDisabled": false,
+      "controls": {
+        "showPause": true,
+        "showResume": false,
+        "showStop": true,
+        "showReset": true,
+        "showSkipPhase": true
+      }
+    },
+    {
+      "ts": 3265.613190279,
+      "step": "run_a_fail_l1_phase_P2",
+      "systemState": "GAME",
+      "gameState": "FAIL_L1",
+      "hash": "11cda04d2908f8bb",
+      "mode": "game",
+      "phase": "P2",
+      "questionType": "fail_l1",
+      "questionText": "Inténtalo de nuevo.",
+      "optionsCount": 0,
+      "inputDisabled": false,
+      "controls": {
+        "showPause": true,
+        "showResume": false,
+        "showStop": true,
+        "showReset": true,
+        "showSkipPhase": true
+      }
+    },
+    {
+      "ts": 3267.635334723,
+      "step": "run_a_correct_phase_P2",
+      "systemState": "GAME",
+      "gameState": "CORRECT",
+      "hash": "4fc6f9a7de5424c1",
+      "mode": "game",
+      "phase": "P2",
+      "questionType": "correct",
+      "questionText": "¡Muy bien!",
+      "optionsCount": 0,
+      "inputDisabled": true,
+      "controls": {
+        "showPause": true,
+        "showResume": false,
+        "showStop": true,
+        "showReset": true,
+        "showSkipPhase": true
+      }
+    },
+    {
+      "ts": 3268.246352293,
+      "step": "run_a_question_present_q3",
+      "systemState": "GAME",
+      "gameState": "QUESTION_PRESENT",
+      "hash": "0544867d6b29b020",
+      "mode": "game",
+      "phase": "P3",
+      "questionType": "multiple_choice",
+      "questionText": "Señala el color green",
+      "optionsCount": 2,
+      "inputDisabled": true,
+      "controls": {
+        "showPause": true,
+        "showResume": false,
+        "showStop": true,
+        "showReset": true,
+        "showSkipPhase": true
+      }
+    },
+    {
+      "ts": 3268.410488081,
+      "step": "run_a_wait_input_q3",
+      "systemState": "GAME",
+      "gameState": "WAIT_INPUT",
+      "hash": "bd50a11a726eb115",
+      "mode": "game",
+      "phase": "P3",
+      "questionType": "multiple_choice",
+      "questionText": "Señala el color green",
+      "optionsCount": 2,
+      "inputDisabled": false,
+      "controls": {
+        "showPause": true,
+        "showResume": false,
+        "showStop": true,
+        "showReset": true,
+        "showSkipPhase": true
+      }
+    },
+    {
+      "ts": 3268.524658233,
+      "step": "run_a_menu_after_stop",
+      "systemState": "IDLE",
+      "gameState": "",
+      "hash": "b239b4dccf44f39b",
+      "mode": "menu",
+      "phase": "",
+      "questionType": "",
+      "questionText": "",
+      "optionsCount": 0,
+      "inputDisabled": false,
+      "controls": {
+        "showPause": false,
+        "showResume": false,
+        "showStop": false,
+        "showReset": false,
+        "showSkipPhase": false
+      }
+    },
+    {
+      "ts": 3268.644047256,
+      "step": "run_b_phase_intro",
+      "systemState": "GAME",
+      "gameState": "PHASE_INTRO",
+      "hash": "8136c9e8a5adf040",
+      "mode": "game",
+      "phase": "P3",
+      "questionType": "phase_intro",
+      "questionText": "Fase P3: Vamos a jugar a los colores.",
+      "optionsCount": 0,
+      "inputDisabled": true,
+      "controls": {
+        "showPause": true,
+        "showResume": false,
+        "showStop": true,
+        "showReset": true,
+        "showSkipPhase": true
+      }
+    },
+    {
+      "ts": 3270.652721489,
+      "step": "run_b_question_present_q1",
+      "systemState": "GAME",
+      "gameState": "QUESTION_PRESENT",
+      "hash": "3586297a82d596e5",
+      "mode": "game",
+      "phase": "P3",
+      "questionType": "multiple_choice",
+      "questionText": "Señala el color green",
+      "optionsCount": 2,
+      "inputDisabled": true,
+      "controls": {
+        "showPause": true,
+        "showResume": false,
+        "showStop": true,
+        "showReset": true,
+        "showSkipPhase": true
+      }
+    },
+    {
+      "ts": 3270.820093228,
+      "step": "run_b_wait_input_q1",
+      "systemState": "GAME",
+      "gameState": "WAIT_INPUT",
+      "hash": "e1ebe7847ce900d7",
+      "mode": "game",
+      "phase": "P3",
+      "questionType": "multiple_choice",
+      "questionText": "Señala el color green",
+      "optionsCount": 2,
+      "inputDisabled": false,
+      "controls": {
+        "showPause": true,
+        "showResume": false,
+        "showStop": true,
+        "showReset": true,
+        "showSkipPhase": true
+      }
+    },
+    {
+      "ts": 3270.933511624,
+      "step": "run_b_fail_l1_phase_P3",
+      "systemState": "GAME",
+      "gameState": "FAIL_L1",
+      "hash": "9195d7430c05b5d0",
+      "mode": "game",
+      "phase": "P3",
+      "questionType": "fail_l1",
+      "questionText": "Inténtalo de nuevo.",
+      "optionsCount": 2,
+      "inputDisabled": false,
+      "controls": {
+        "showPause": true,
+        "showResume": false,
+        "showStop": true,
+        "showReset": true,
+        "showSkipPhase": true
+      }
+    },
+    {
+      "ts": 3272.955567656,
+      "step": "run_b_correct_phase_P3",
+      "systemState": "GAME",
+      "gameState": "CORRECT",
+      "hash": "a14ee027ce8d22e8",
+      "mode": "game",
+      "phase": "P3",
+      "questionType": "correct",
+      "questionText": "¡Muy bien!",
+      "optionsCount": 0,
+      "inputDisabled": true,
+      "controls": {
+        "showPause": true,
+        "showResume": false,
+        "showStop": true,
+        "showReset": true,
+        "showSkipPhase": true
+      }
+    },
+    {
+      "ts": 3273.566884049,
+      "step": "run_b_question_present_q2",
+      "systemState": "GAME",
+      "gameState": "QUESTION_PRESENT",
+      "hash": "0c589d91b8cb970d",
+      "mode": "game",
+      "phase": "P4_YESNO",
+      "questionType": "yes_no",
+      "questionText": "¿Es esto el color red?",
+      "optionsCount": 2,
+      "inputDisabled": true,
+      "controls": {
+        "showPause": true,
+        "showResume": false,
+        "showStop": true,
+        "showReset": true,
+        "showSkipPhase": true
+      }
+    },
+    {
+      "ts": 3273.64168605,
+      "step": "run_b_wait_input_q2",
+      "systemState": "GAME",
+      "gameState": "WAIT_INPUT",
+      "hash": "c6839ff2932512f9",
+      "mode": "game",
+      "phase": "P4_YESNO",
+      "questionType": "yes_no",
+      "questionText": "¿Es esto el color red?",
+      "optionsCount": 2,
+      "inputDisabled": false,
+      "controls": {
+        "showPause": true,
+        "showResume": false,
+        "showStop": true,
+        "showReset": true,
+        "showSkipPhase": true
+      }
+    },
+    {
+      "ts": 3273.756361499,
+      "step": "run_b_fail_l1_phase_P4_YESNO",
+      "systemState": "GAME",
+      "gameState": "FAIL_L1",
+      "hash": "4fdb4aa374053d3f",
+      "mode": "game",
+      "phase": "P4_YESNO",
+      "questionType": "fail_l1",
+      "questionText": "Inténtalo de nuevo.",
+      "optionsCount": 2,
+      "inputDisabled": false,
+      "controls": {
+        "showPause": true,
+        "showResume": false,
+        "showStop": true,
+        "showReset": true,
+        "showSkipPhase": true
+      }
+    },
+    {
+      "ts": 3275.772367237,
+      "step": "run_b_correct_phase_P4_YESNO",
+      "systemState": "GAME",
+      "gameState": "CORRECT",
+      "hash": "76142fdc6e0c3837",
+      "mode": "game",
+      "phase": "P4_YESNO",
+      "questionType": "correct",
+      "questionText": "¡Muy bien!",
+      "optionsCount": 0,
+      "inputDisabled": true,
+      "controls": {
+        "showPause": true,
+        "showResume": false,
+        "showStop": true,
+        "showReset": true,
+        "showSkipPhase": true
+      }
+    },
+    {
+      "ts": 3276.384098157,
+      "step": "run_b_question_present_q3",
+      "systemState": "GAME",
+      "gameState": "QUESTION_PRESENT",
+      "hash": "0b26e6d26cd9d177",
+      "mode": "game",
+      "phase": "P4_YESNO",
+      "questionType": "yes_no",
+      "questionText": "¿Es esto el color yellow?",
+      "optionsCount": 2,
+      "inputDisabled": true,
+      "controls": {
+        "showPause": true,
+        "showResume": false,
+        "showStop": true,
+        "showReset": true,
+        "showSkipPhase": true
+      }
+    },
+    {
+      "ts": 3276.457109701,
+      "step": "run_b_wait_input_q3",
+      "systemState": "GAME",
+      "gameState": "WAIT_INPUT",
+      "hash": "5aeb2c159caa50cf",
+      "mode": "game",
+      "phase": "P4_YESNO",
+      "questionType": "yes_no",
+      "questionText": "¿Es esto el color yellow?",
+      "optionsCount": 2,
+      "inputDisabled": false,
+      "controls": {
+        "showPause": true,
+        "showResume": false,
+        "showStop": true,
+        "showReset": true,
+        "showSkipPhase": true
+      }
+    },
+    {
+      "ts": 3276.569281447,
+      "step": "run_b_correct_phase_P4_YESNO",
+      "systemState": "GAME",
+      "gameState": "CORRECT",
+      "hash": "547b2765a9f48b58",
+      "mode": "game",
+      "phase": "P4_YESNO",
+      "questionType": "correct",
+      "questionText": "¡Muy bien!",
+      "optionsCount": 0,
+      "inputDisabled": true,
+      "controls": {
+        "showPause": true,
+        "showResume": false,
+        "showStop": true,
+        "showReset": true,
+        "showSkipPhase": true
+      }
+    },
+    {
+      "ts": 3277.178713038,
+      "step": "run_b_question_present_q4",
+      "systemState": "GAME",
+      "gameState": "QUESTION_PRESENT",
+      "hash": "630d0d9c4000daac",
+      "mode": "game",
+      "phase": "P6",
+      "questionType": "pointing",
+      "questionText": "¿Dónde está el color?",
+      "optionsCount": 2,
+      "inputDisabled": true,
+      "controls": {
+        "showPause": true,
+        "showResume": false,
+        "showStop": true,
+        "showReset": true,
+        "showSkipPhase": true
+      }
+    },
+    {
+      "ts": 3277.345833499,
+      "step": "run_b_wait_input_q4",
+      "systemState": "GAME",
+      "gameState": "WAIT_INPUT",
+      "hash": "6544e0205e489931",
+      "mode": "game",
+      "phase": "P6",
+      "questionType": "pointing",
+      "questionText": "¿Dónde está el color?",
+      "optionsCount": 2,
+      "inputDisabled": false,
+      "controls": {
+        "showPause": true,
+        "showResume": false,
+        "showStop": true,
+        "showReset": true,
+        "showSkipPhase": true
+      }
+    },
+    {
+      "ts": 3277.459312372,
+      "step": "run_b_correct_phase_P6",
+      "systemState": "GAME",
+      "gameState": "CORRECT",
+      "hash": "89462aae4ee3793c",
+      "mode": "game",
+      "phase": "P6",
+      "questionType": "correct",
+      "questionText": "¡Muy bien!",
+      "optionsCount": 0,
+      "inputDisabled": true,
+      "controls": {
+        "showPause": true,
+        "showResume": false,
+        "showStop": true,
+        "showReset": true,
+        "showSkipPhase": true
+      }
+    },
+    {
+      "ts": 3278.067176616,
+      "step": "run_b_question_present_q5",
+      "systemState": "GAME",
+      "gameState": "QUESTION_PRESENT",
+      "hash": "150bbcc385bbfe31",
+      "mode": "game",
+      "phase": "P7",
+      "questionType": "multiple_choice",
+      "questionText": "¿Es un green o blue?",
+      "optionsCount": 2,
+      "inputDisabled": true,
+      "controls": {
+        "showPause": true,
+        "showResume": false,
+        "showStop": true,
+        "showReset": true,
+        "showSkipPhase": true
+      }
+    },
+    {
+      "ts": 3278.140504378,
+      "step": "run_b_wait_input_q5",
+      "systemState": "GAME",
+      "gameState": "WAIT_INPUT",
+      "hash": "07dc32263f1cdcc2",
+      "mode": "game",
+      "phase": "P7",
+      "questionType": "multiple_choice",
+      "questionText": "¿Es un green o blue?",
+      "optionsCount": 2,
+      "inputDisabled": false,
+      "controls": {
+        "showPause": true,
+        "showResume": false,
+        "showStop": true,
+        "showReset": true,
+        "showSkipPhase": true
+      }
+    },
+    {
+      "ts": 3278.253365425,
+      "step": "run_b_fail_l1_phase_P7",
+      "systemState": "GAME",
+      "gameState": "FAIL_L1",
+      "hash": "7553b70eb6a6198a",
+      "mode": "game",
+      "phase": "P7",
+      "questionType": "fail_l1",
+      "questionText": "Inténtalo de nuevo.",
+      "optionsCount": 2,
+      "inputDisabled": false,
+      "controls": {
+        "showPause": true,
+        "showResume": false,
+        "showStop": true,
+        "showReset": true,
+        "showSkipPhase": true
+      }
+    },
+    {
+      "ts": 3280.277326964,
+      "step": "run_b_correct_phase_P7",
+      "systemState": "GAME",
+      "gameState": "CORRECT",
+      "hash": "9566fcea13c82982",
+      "mode": "game",
+      "phase": "P7",
+      "questionType": "correct",
+      "questionText": "¡Muy bien!",
+      "optionsCount": 0,
+      "inputDisabled": true,
+      "controls": {
+        "showPause": true,
+        "showResume": false,
+        "showStop": true,
+        "showReset": true,
+        "showSkipPhase": true
+      }
+    },
+    {
+      "ts": 3280.887261598,
+      "step": "run_b_phase_complete",
+      "systemState": "GAME",
+      "gameState": "PHASE_COMPLETE",
+      "hash": "236d514eeb91bc00",
+      "mode": "game",
+      "phase": "P7",
+      "questionType": "phase_complete",
+      "questionText": "¡Fase P7 completada!",
+      "optionsCount": 0,
+      "inputDisabled": true,
+      "controls": {
+        "showPause": true,
+        "showResume": false,
+        "showStop": true,
+        "showReset": true,
+        "showSkipPhase": true
+      }
+    },
+    {
+      "ts": 3281.193811916,
+      "step": "run_b_menu_after_complete",
+      "systemState": "IDLE",
+      "gameState": "",
+      "hash": "3c5e65d2ac1963c2",
+      "mode": "menu",
+      "phase": "",
+      "questionType": "",
+      "questionText": "",
+      "optionsCount": 0,
+      "inputDisabled": false,
+      "controls": {
+        "showPause": false,
+        "showResume": false,
+        "showStop": false,
+        "showReset": false,
+        "showSkipPhase": false
+      }
+    },
+    {
+      "ts": 3281.312560352,
+      "step": "run_c_controls_phase_intro",
+      "systemState": "GAME",
+      "gameState": "PHASE_INTRO",
+      "hash": "28d58a0a075635f3",
+      "mode": "game",
+      "phase": "P1",
+      "questionType": "phase_intro",
+      "questionText": "Fase P1: Vamos a jugar a los colores.",
+      "optionsCount": 0,
+      "inputDisabled": true,
+      "controls": {
+        "showPause": true,
+        "showResume": false,
+        "showStop": true,
+        "showReset": true,
+        "showSkipPhase": true
+      }
+    },
+    {
+      "ts": 3283.235089076,
+      "step": "run_c_controls_question_present_q1",
+      "systemState": "GAME",
+      "gameState": "QUESTION_PRESENT",
+      "hash": "8785370c849a7f7b",
+      "mode": "game",
+      "phase": "P1",
+      "questionType": "multiple_choice",
+      "questionText": "Elige la opción correcta.",
+      "optionsCount": 2,
+      "inputDisabled": true,
+      "controls": {
+        "showPause": true,
+        "showResume": false,
+        "showStop": true,
+        "showReset": true,
+        "showSkipPhase": true
+      }
+    },
+    {
+      "ts": 3283.490248729,
+      "step": "run_c_controls_wait_input_q1",
+      "systemState": "GAME",
+      "gameState": "WAIT_INPUT",
+      "hash": "ece785c4ca386e31",
+      "mode": "game",
+      "phase": "P1",
+      "questionType": "multiple_choice",
+      "questionText": "Elige la opción correcta.",
+      "optionsCount": 2,
+      "inputDisabled": false,
+      "controls": {
+        "showPause": true,
+        "showResume": false,
+        "showStop": true,
+        "showReset": true,
+        "showSkipPhase": true
+      }
+    },
+    {
+      "ts": 3283.605892587,
+      "step": "run_c_controls_skip_intro_P2",
+      "systemState": "GAME",
+      "gameState": "PHASE_INTRO",
+      "hash": "9c73df62bd853ec0",
+      "mode": "game",
+      "phase": "P2",
+      "questionType": "phase_intro",
+      "questionText": "Fase P2: Vamos a jugar a los colores.",
+      "optionsCount": 0,
+      "inputDisabled": true,
+      "controls": {
+        "showPause": true,
+        "showResume": false,
+        "showStop": true,
+        "showReset": true,
+        "showSkipPhase": true
+      }
+    },
+    {
+      "ts": 3285.613908735,
+      "step": "run_c_controls_question_present_q2",
+      "systemState": "GAME",
+      "gameState": "QUESTION_PRESENT",
+      "hash": "32dff892c7c392ab",
+      "mode": "game",
+      "phase": "P2",
+      "questionType": "speech",
+      "questionText": "¿Qué color es? Es el color yellow.",
+      "optionsCount": 0,
+      "inputDisabled": true,
+      "controls": {
+        "showPause": true,
+        "showResume": false,
+        "showStop": true,
+        "showReset": true,
+        "showSkipPhase": true
+      }
+    },
+    {
+      "ts": 3285.777366829,
+      "step": "run_c_controls_wait_input_q2",
+      "systemState": "GAME",
+      "gameState": "WAIT_INPUT",
+      "hash": "6310fdf08e4c7d1e",
+      "mode": "game",
+      "phase": "P2",
+      "questionType": "speech",
+      "questionText": "¿Qué color es? Es el color yellow.",
+      "optionsCount": 0,
+      "inputDisabled": false,
+      "controls": {
+        "showPause": true,
+        "showResume": false,
+        "showStop": true,
+        "showReset": true,
+        "showSkipPhase": true
+      }
+    },
+    {
+      "ts": 3285.889728566,
+      "step": "run_c_controls_reset_intro_P1",
+      "systemState": "GAME",
+      "gameState": "PHASE_INTRO",
+      "hash": "7ecb3ba4c8589f60",
+      "mode": "game",
+      "phase": "P1",
+      "questionType": "phase_intro",
+      "questionText": "Fase P1: Vamos a jugar a los colores.",
+      "optionsCount": 0,
+      "inputDisabled": true,
+      "controls": {
+        "showPause": true,
+        "showResume": false,
+        "showStop": true,
+        "showReset": true,
+        "showSkipPhase": true
+      }
+    },
+    {
+      "ts": 3287.898745214,
+      "step": "run_c_controls_question_present_q1",
+      "systemState": "GAME",
+      "gameState": "QUESTION_PRESENT",
+      "hash": "2966fe55e85ec10e",
+      "mode": "game",
+      "phase": "P1",
+      "questionType": "multiple_choice",
+      "questionText": "Elige la opción correcta.",
+      "optionsCount": 2,
+      "inputDisabled": true,
+      "controls": {
+        "showPause": true,
+        "showResume": false,
+        "showStop": true,
+        "showReset": true,
+        "showSkipPhase": true
+      }
+    },
+    {
+      "ts": 3288.063849725,
+      "step": "run_c_controls_wait_input_q1",
+      "systemState": "GAME",
+      "gameState": "WAIT_INPUT",
+      "hash": "5f0fb7a8f4d5a7c7",
+      "mode": "game",
+      "phase": "P1",
+      "questionType": "multiple_choice",
+      "questionText": "Elige la opción correcta.",
+      "optionsCount": 2,
+      "inputDisabled": false,
+      "controls": {
+        "showPause": true,
+        "showResume": false,
+        "showStop": true,
+        "showReset": true,
+        "showSkipPhase": true
+      }
+    },
+    {
+      "ts": 3288.176369147,
+      "step": "run_c_controls_fail_l1_phase_P1",
+      "systemState": "GAME",
+      "gameState": "FAIL_L1",
+      "hash": "ebe418f0d654e535",
+      "mode": "game",
+      "phase": "P1",
+      "questionType": "fail_l1",
+      "questionText": "Inténtalo de nuevo.",
+      "optionsCount": 2,
+      "inputDisabled": false,
+      "controls": {
+        "showPause": true,
+        "showResume": false,
+        "showStop": true,
+        "showReset": true,
+        "showSkipPhase": true
+      }
+    },
+    {
+      "ts": 3290.200943777,
+      "step": "run_c_controls_correct_phase_P1",
+      "systemState": "GAME",
+      "gameState": "CORRECT",
+      "hash": "0547b6c3149d3d85",
+      "mode": "game",
+      "phase": "P1",
+      "questionType": "correct",
+      "questionText": "¡Muy bien!",
+      "optionsCount": 0,
+      "inputDisabled": true,
+      "controls": {
+        "showPause": true,
+        "showResume": false,
+        "showStop": true,
+        "showReset": true,
+        "showSkipPhase": true
+      }
+    },
+    {
+      "ts": 3290.810109587,
+      "step": "run_c_controls_question_present_q2",
+      "systemState": "GAME",
+      "gameState": "QUESTION_PRESENT",
+      "hash": "3b962abfb131b958",
+      "mode": "game",
+      "phase": "P2",
+      "questionType": "speech",
+      "questionText": "¿Qué color es? Es el color yellow.",
+      "optionsCount": 0,
+      "inputDisabled": true,
+      "controls": {
+        "showPause": true,
+        "showResume": false,
+        "showStop": true,
+        "showReset": true,
+        "showSkipPhase": true
+      }
+    },
+    {
+      "ts": 3290.985281466,
+      "step": "run_c_controls_wait_input_q2",
+      "systemState": "GAME",
+      "gameState": "WAIT_INPUT",
+      "hash": "c07f867ba86b6543",
+      "mode": "game",
+      "phase": "P2",
+      "questionType": "speech",
+      "questionText": "¿Qué color es? Es el color yellow.",
+      "optionsCount": 0,
+      "inputDisabled": false,
+      "controls": {
+        "showPause": true,
+        "showResume": false,
+        "showStop": true,
+        "showReset": true,
+        "showSkipPhase": true
+      }
+    },
+    {
+      "ts": 3291.098099438,
+      "step": "run_c_controls_fail_l1_phase_P2",
+      "systemState": "GAME",
+      "gameState": "FAIL_L1",
+      "hash": "37a906dee598e35f",
+      "mode": "game",
+      "phase": "P2",
+      "questionType": "fail_l1",
+      "questionText": "Inténtalo de nuevo.",
+      "optionsCount": 0,
+      "inputDisabled": false,
+      "controls": {
+        "showPause": true,
+        "showResume": false,
+        "showStop": true,
+        "showReset": true,
+        "showSkipPhase": true
+      }
+    },
+    {
+      "ts": 3293.117094581,
+      "step": "run_c_controls_correct_phase_P2",
+      "systemState": "GAME",
+      "gameState": "CORRECT",
+      "hash": "a1457d27a71a1497",
+      "mode": "game",
+      "phase": "P2",
+      "questionType": "correct",
+      "questionText": "¡Muy bien!",
+      "optionsCount": 0,
+      "inputDisabled": true,
+      "controls": {
+        "showPause": true,
+        "showResume": false,
+        "showStop": true,
+        "showReset": true,
+        "showSkipPhase": true
+      }
+    },
+    {
+      "ts": 3293.727293059,
+      "step": "run_c_controls_question_present_q3",
+      "systemState": "GAME",
+      "gameState": "QUESTION_PRESENT",
+      "hash": "d2f2967a0d70908b",
+      "mode": "game",
+      "phase": "P3",
+      "questionType": "multiple_choice",
+      "questionText": "Señala el color red",
+      "optionsCount": 2,
+      "inputDisabled": true,
+      "controls": {
+        "showPause": true,
+        "showResume": false,
+        "showStop": true,
+        "showReset": true,
+        "showSkipPhase": true
+      }
+    },
+    {
+      "ts": 3293.893605263,
+      "step": "run_c_controls_wait_input_q3",
+      "systemState": "GAME",
+      "gameState": "WAIT_INPUT",
+      "hash": "dc7050d679b91b07",
+      "mode": "game",
+      "phase": "P3",
+      "questionType": "multiple_choice",
+      "questionText": "Señala el color red",
+      "optionsCount": 2,
+      "inputDisabled": false,
+      "controls": {
+        "showPause": true,
+        "showResume": false,
+        "showStop": true,
+        "showReset": true,
+        "showSkipPhase": true
+      }
+    },
+    {
+      "ts": 3294.007571699,
+      "step": "run_c_controls_fail_l1_phase_P3",
+      "systemState": "GAME",
+      "gameState": "FAIL_L1",
+      "hash": "5126da41b6789932",
+      "mode": "game",
+      "phase": "P3",
+      "questionType": "fail_l1",
+      "questionText": "Inténtalo de nuevo.",
+      "optionsCount": 2,
+      "inputDisabled": false,
+      "controls": {
+        "showPause": true,
+        "showResume": false,
+        "showStop": true,
+        "showReset": true,
+        "showSkipPhase": true
+      }
+    },
+    {
+      "ts": 3296.026596241,
+      "step": "run_c_controls_correct_phase_P3",
+      "systemState": "GAME",
+      "gameState": "CORRECT",
+      "hash": "59db8a8e99b21369",
+      "mode": "game",
+      "phase": "P3",
+      "questionType": "correct",
+      "questionText": "¡Muy bien!",
+      "optionsCount": 0,
+      "inputDisabled": true,
+      "controls": {
+        "showPause": true,
+        "showResume": false,
+        "showStop": true,
+        "showReset": true,
+        "showSkipPhase": true
+      }
+    },
+    {
+      "ts": 3296.642601992,
+      "step": "run_c_controls_phase_complete",
+      "systemState": "GAME",
+      "gameState": "PHASE_COMPLETE",
+      "hash": "63a8ccf26369147c",
+      "mode": "game",
+      "phase": "P3",
+      "questionType": "phase_complete",
+      "questionText": "¡Fase P3 completada!",
+      "optionsCount": 0,
+      "inputDisabled": true,
+      "controls": {
+        "showPause": true,
+        "showResume": false,
+        "showStop": true,
+        "showReset": true,
+        "showSkipPhase": true
+      }
+    },
+    {
+      "ts": 3296.952074026,
+      "step": "run_c_controls_menu_after_complete",
+      "systemState": "IDLE",
+      "gameState": "",
+      "hash": "2e5990b70ff175db",
+      "mode": "menu",
+      "phase": "",
+      "questionType": "",
+      "questionText": "",
+      "optionsCount": 0,
+      "inputDisabled": false,
+      "controls": {
+        "showPause": false,
+        "showResume": false,
+        "showStop": false,
+        "showReset": false,
+        "showSkipPhase": false
+      }
+    }
+  ],
+  "controls_events": [
+    {
+      "ts": 3262.365267472,
+      "command": "PAUSE",
+      "resulting_state": "PAUSED",
+      "resulting_gameState": null,
+      "resulting_phase": null
+    },
+    {
+      "ts": 3262.478330125,
+      "command": "RESUME",
+      "resulting_state": "GAME",
+      "resulting_gameState": "WAIT_INPUT",
+      "resulting_phase": null
+    },
+    {
+      "ts": 3268.41652451,
+      "command": "STOP",
+      "resulting_state": "IDLE",
+      "resulting_gameState": null,
+      "resulting_phase": null
+    },
+    {
+      "ts": 3283.496380844,
+      "command": "SKIP_PHASE",
+      "resulting_state": "GAME",
+      "resulting_gameState": "PHASE_INTRO",
+      "resulting_phase": "P2"
+    },
+    {
+      "ts": 3285.782300016,
+      "command": "RESET",
+      "resulting_state": "GAME",
+      "resulting_gameState": "PHASE_INTRO",
+      "resulting_phase": "P1"
+    }
+  ],
+  "anomalies": []
+}

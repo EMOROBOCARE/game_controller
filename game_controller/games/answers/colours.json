@@ -1,0 +1,30 @@
+[
+    {
+        "label": "red",
+        "value": "red",
+        "image": "red_circle",
+        "difficulty": null,
+        "type": "colour"
+    },
+    {
+        "label": "blue",
+        "value": "blue",
+        "image": "blue_circle",
+        "difficulty": 1,
+        "type": "colour"
+    },
+    {
+        "label": "green",
+        "value": "green",
+        "image": "green_circle",
+        "difficulty": 2,
+        "type": "colour"
+    },
+    {
+        "label": "yellow",
+        "value": "yellow",
+        "image": "yellow_circle",
+        "difficulty": 3,
+        "type": "colour"
+    }
+]

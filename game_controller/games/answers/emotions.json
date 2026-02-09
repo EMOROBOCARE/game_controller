@@ -1,0 +1,44 @@
+[
+  {
+    "label": "contento",
+    "value": "contento",
+    "image": "assets/emotion-contento.svg",
+    "difficulty": null,
+    "type": "emocion"
+  },
+  {
+    "label": "triste",
+    "value": "triste",
+    "image": "assets/emotion-triste.svg",
+    "difficulty": null,
+    "type": "emocion"
+  },
+  {
+    "label": "enfadado",
+    "value": "enfadado",
+    "image": "assets/emotion-enfadado.svg",
+    "difficulty": null,
+    "type": "emocion"
+  },
+  {
+    "label": "sorprendido",
+    "value": "sorprendido",
+    "image": "assets/emotion-sorprendido.svg",
+    "difficulty": null,
+    "type": "emocion"
+  },
+  {
+    "label": "asustado",
+    "value": "asustado",
+    "image": "assets/emotion-asustado.svg",
+    "difficulty": null,
+    "type": "emocion"
+  },
+  {
+    "label": "cansado",
+    "value": "cansado",
+    "image": "assets/emotion-cansado.svg",
+    "difficulty": null,
+    "type": "emocion"
+  }
+]

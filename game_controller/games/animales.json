@@ -1,0 +1,67 @@
+{
+  "slug": "animales",
+  "title": "Animales",
+  "image": "assets/animales.png",
+  "intro": "Vamos a jugar a los animales.",
+  "correct_effects": [
+    "confetti",
+    "sparkles",
+    "emoji"
+  ],
+  "positive_feedback": [
+    "¡Genial! Es {expr}",
+    "¡Muy bien! Es {expr}",
+    "¡Perfecto! Es {expr}"
+  ],
+  "hint_timeout": 8,
+  "supportedPhases": [
+    "P1",
+    "P2",
+    "P3",
+    "P4_YESNO",
+    "P6",
+    "P7"
+  ],
+  "difficulties": {
+    "basic": {
+      "level": "basic",
+      "optionsCount": 2
+    },
+    "intermediate": {
+      "level": "intermediate",
+      "optionsCount": 3
+    },
+    "advanced": {
+      "level": "advanced",
+      "optionsCount": 4
+    }
+  },
+  "phaseConfig": {
+    "P1": {
+      "phase_introduction": "Une los animales iguales.",
+      "prompt": "Une {animal} con {animal}"
+    },
+    "P2": {
+      "phase_introduction": "Repite el nombre del animal.",
+      "prompt": "¿Qué animal es? Es {animal}."
+    },
+    "P3": {
+      "phase_introduction": "Señala el animal correcto.",
+      "prompt": "Señala {animal}"
+    },
+    "P4_YESNO": {
+      "phase_introduction": "Responde sí o no a las preguntas.",
+      "prompt": "¿Es esto {animal}?"
+    },
+    "P6": {
+      "phase_introduction": "Dime qué animal quieres señalar.",
+      "prompt": "¿Dónde está el animal?",
+      "successResponse": "Aquííí"
+    },
+    "P7": {
+      "phase_introduction": "¿Cuál es el animal correcto?",
+      "prompt": "¿Es un {option1} o {option2}?"
+    }
+  },
+  "answerType": "animals"
+}

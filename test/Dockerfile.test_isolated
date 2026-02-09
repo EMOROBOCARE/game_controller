@@ -1,0 +1,58 @@
+# Dockerfile for Isolated Integration Tests
+#
+# Runs integration tests with access to game_controller package
+
+FROM ros:humble
+
+# Install Python and testing tools
+RUN apt-get update && apt-get install -y \
+    python3-pip \
+    python3-pytest \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install ROS2 dependencies
+RUN apt-get update && apt-get install -y \
+    ros-humble-std-msgs \
+    ros-humble-rclpy \
+    python3-colcon-common-extensions \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install pytest
+RUN pip3 install pytest pytest-timeout
+
+# Install hri_actions_msgs
+RUN apt-get update && apt-get install -y \
+    git \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /test_ws
+
+# Clone and build hri_actions_msgs
+RUN mkdir -p /test_ws/src && \
+    cd /test_ws/src && \
+    git clone https://github.com/tu-darmstadt-ros-pkg/hri_actions.git || true
+
+# Copy game_controller source
+COPY game_controller /test_ws/src/game_controller
+
+# Build workspace
+RUN bash -c "source /opt/ros/humble/setup.bash && \
+    cd /test_ws && \
+    colcon build --symlink-install"
+
+# Copy test files
+COPY test /tests
+
+# Create results directory
+RUN mkdir -p /test_results
+
+# Setup ROS workspace
+RUN echo '#!/bin/bash\n\
+set -e\n\
+source /opt/ros/humble/setup.bash\n\
+source /test_ws/install/setup.bash\n\
+exec "$@"' > /ros_entrypoint.sh && \
+    chmod +x /ros_entrypoint.sh
+
+ENTRYPOINT ["/ros_entrypoint.sh"]
+CMD ["bash"]

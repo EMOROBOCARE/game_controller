@@ -1,0 +1,104 @@
+# Docker Compose for Isolated Integration Tests
+#
+# This compose file runs integration tests WITHOUT external dependencies.
+# Uses mock ROS2 nodes to simulate decision_making and generic_ui.
+#
+# The "trick": Mock nodes simulate external services, allowing complete
+# isolation from communication_hub, decision_making_ws, and generic_ui repos.
+#
+# Usage:
+#   docker compose -f docker-compose.isolated.yml up --build --abort-on-container-exit
+#
+# View test results:
+#   docker compose -f docker-compose.isolated.yml logs test_runner
+
+services:
+  # Mock Decision Making - Simulates FSM behavior
+  mock_decision_making:
+    build:
+      context: .
+      dockerfile: test/Dockerfile.mocks
+      network: host
+    environment:
+      ROS_DOMAIN_ID: 99  # Isolated domain
+      MOCK_NODE: decision_making
+    networks:
+      - rosnet_isolated
+    command: ["python3", "/test_mocks/mock_decision_making.py"]
+    healthcheck:
+      test: ["CMD", "bash", "-c", "source /opt/ros/humble/setup.bash && ros2 node list | grep -q mock_decision_making"]
+      interval: 2s
+      timeout: 5s
+      retries: 10
+      start_period: 5s
+
+  # Mock Generic UI - Simulates UpdateManifest service
+  mock_generic_ui:
+    build:
+      context: .
+      dockerfile: test/Dockerfile.mocks
+      network: host
+    environment:
+      ROS_DOMAIN_ID: 99  # Isolated domain
+      MOCK_NODE: generic_ui
+    networks:
+      - rosnet_isolated
+    command: ["python3", "/test_mocks/mock_generic_ui.py"]
+    healthcheck:
+      test: ["CMD", "bash", "-c", "source /opt/ros/humble/setup.bash && ros2 service list | grep -q update_manifest"]
+      interval: 2s
+      timeout: 5s
+      retries: 10
+      start_period: 5s
+
+  # Game Controller - Under Test
+  game_controller:
+    build:
+      context: game_controller
+      dockerfile: Dockerfile.isolated
+      network: host
+    environment:
+      ROS_DOMAIN_ID: 99  # Isolated domain
+    depends_on:
+      mock_decision_making:
+        condition: service_healthy
+      mock_generic_ui:
+        condition: service_healthy
+    networks:
+      - rosnet_isolated
+    healthcheck:
+      test: ["CMD", "bash", "-c", "source /opt/ros/humble/setup.bash && source /ros2_ws/install/setup.bash && ros2 node list | grep -q game_controller"]
+      interval: 2s
+      timeout: 5s
+      retries: 10
+      start_period: 5s
+
+  # Test Runner - Runs integration tests
+  test_runner:
+    build:
+      context: .
+      dockerfile: test/Dockerfile.test_isolated
+      network: host
+    environment:
+      ROS_DOMAIN_ID: 99  # Isolated domain
+      PYTHONUNBUFFERED: 1
+    depends_on:
+      game_controller:
+        condition: service_healthy
+    networks:
+      - rosnet_isolated
+    volumes:
+      - ./test/results:/test_results
+    command: >
+      bash -c "
+        source /opt/ros/humble/setup.bash &&
+        source /test_ws/install/setup.bash &&
+        echo '================================' &&
+        echo 'Running Isolated Integration Tests' &&
+        echo '================================' &&
+        python3 -m pytest /tests/integration/test_isolated_integration.py -v --tb=short --junitxml=/test_results/isolated_results.xml
+      "
+
+networks:
+  rosnet_isolated:
+    driver: bridge

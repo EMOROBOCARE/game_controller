@@ -1,0 +1,10 @@
+# Docker Compose for running unit tests only
+# Usage:
+#   docker compose -f docker-compose.unit.yml up --build --abort-on-container-exit
+
+services:
+  unit_tests:
+    build:
+      context: .
+      dockerfile: test/Dockerfile.test
+    command: ["python3", "-m", "pytest", "/ros2_ws/src/game_controller/test", "--ignore=/ros2_ws/src/game_controller/test/e2e", "-v", "--tb=short"]

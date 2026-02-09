@@ -1,0 +1,107 @@
+# Docker Compose for Game Controller Integration Tests
+#
+# This compose file runs integration tests for the complete game system.
+# Tests verify:
+# - Game initialization flow
+# - State transitions through phases
+# - UI manifest updates
+# - User input handling
+# - Auto-advance behavior
+#
+# Usage:
+#   docker compose -f docker-compose.tests.yml up --build --abort-on-container-exit
+#
+# View test results:
+#   docker compose -f docker-compose.tests.yml logs test_runner
+
+services:
+  # Decision Making - Phase-based FSM
+  decision_making:
+    build:
+      context: ../refactored_game/decision_making_ws
+      dockerfile: Dockerfile
+      network: host
+    environment:
+      ROS_DOMAIN_ID: 0
+    networks:
+      - rosnet_test
+    healthcheck:
+      test: ["CMD", "bash", "-lc", "source /opt/ros/humble/setup.bash && ros2 node list"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  # Game Controller - Orchestration
+  game_controller:
+    build:
+      context: .
+      dockerfile: game_controller/Dockerfile
+      network: host
+      args:
+        GENERIC_UI_INTERFACES_PATH: game_controller/stub_generic_ui_interfaces
+    environment:
+      ROS_DOMAIN_ID: 0
+    volumes:
+      - ./game_controller/games:/ros2_ws/src/game_controller/games:ro
+    depends_on:
+      decision_making:
+        condition: service_healthy
+    networks:
+      - rosnet_test
+    healthcheck:
+      test: ["CMD", "bash", "-lc", "source /opt/ros/humble/setup.bash && source /ros2_ws/install/setup.bash && ros2 node list"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  # Generic UI Backend (for manifest service)
+  backend:
+    build:
+      context: ../generic_ui
+      dockerfile: backend/Dockerfile
+      network: host
+    environment:
+      ROS_DOMAIN_ID: 0
+      UI_GATEWAY_PORT: 8080
+      UI_SIMPLE_UI_DEMO: "0"
+    depends_on:
+      decision_making:
+        condition: service_healthy
+    networks:
+      - rosnet_test
+    healthcheck:
+      test: ["CMD", "python3", "-c", "import socket; s=socket.socket(); s.connect(('localhost', 8080)); s.close()"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  # Test Runner
+  test_runner:
+    build:
+      context: .
+      dockerfile: test/Dockerfile.test
+      network: host
+    environment:
+      ROS_DOMAIN_ID: 0
+      TEST_TIMEOUT: 120
+    depends_on:
+      game_controller:
+        condition: service_healthy
+      backend:
+        condition: service_healthy
+    volumes:
+      - ./test/results:/test_results
+    networks:
+      - rosnet_test
+    command: [
+      "python3", "-m", "pytest",
+      "/tests",
+      "/ros2_ws/src/game_controller/test",
+      "--ignore=/ros2_ws/src/game_controller/test/e2e",
+      "-v", "--tb=short",
+      "--junitxml=/test_results/results.xml"
+    ]
+
+networks:
+  rosnet_test:
+    driver: bridge

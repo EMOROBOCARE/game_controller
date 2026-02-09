@@ -1,0 +1,58 @@
+[
+  {
+    "label": "pera",
+    "value": "pera",
+    "image": "assets/fruit-pera.svg",
+    "difficulty": null,
+    "type": "fruta"
+  },
+  {
+    "label": "manzana",
+    "value": "manzana",
+    "image": "assets/fruit-manzana.svg",
+    "difficulty": null,
+    "type": "fruta"
+  },
+  {
+    "label": "naranja",
+    "value": "naranja",
+    "image": "assets/fruit-naranja.svg",
+    "difficulty": null,
+    "type": "fruta"
+  },
+  {
+    "label": "plátano",
+    "value": "plátano",
+    "image": "assets/fruit-platano.svg",
+    "difficulty": null,
+    "type": "fruta"
+  },
+  {
+    "label": "fresa",
+    "value": "fresa",
+    "image": "assets/fruit-fresa.svg",
+    "difficulty": null,
+    "type": "fruta"
+  },
+  {
+    "label": "uva",
+    "value": "uva",
+    "image": "assets/fruit-uva.svg",
+    "difficulty": null,
+    "type": "fruta"
+  },
+  {
+    "label": "sandía",
+    "value": "sandía",
+    "image": "assets/fruit-sandia.svg",
+    "difficulty": null,
+    "type": "fruta"
+  },
+  {
+    "label": "cereza",
+    "value": "cereza",
+    "image": "assets/fruit-cereza.svg",
+    "difficulty": null,
+    "type": "fruta"
+  }
+]

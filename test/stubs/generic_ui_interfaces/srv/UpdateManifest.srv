@@ -1,0 +1,12 @@
+# UpdateManifest service definition (stub for testing)
+#
+# Updates the UI manifest via set or patch operations
+
+# Request
+string operation         # "set" or "patch"
+string json_payload      # JSON string with manifest or patches
+---
+# Response
+bool success             # True if update succeeded
+string message           # Status message
+string manifest_hash     # Hash of the current manifest

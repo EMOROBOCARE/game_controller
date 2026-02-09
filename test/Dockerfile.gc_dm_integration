@@ -1,0 +1,37 @@
+# Dockerfile for the headless integration harness container
+#
+# Build context: repository root (.. from game_controller/)
+FROM ros:humble-ros-base
+
+ENV DEBIAN_FRONTEND=noninteractive
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    python3-pip \
+    python3-colcon-common-extensions \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /ros2_ws/src
+
+# Interfaces required by the harness (GetManifest + Intent).
+COPY generic_ui/ros2/generic_ui_interfaces /ros2_ws/src/generic_ui_interfaces
+COPY refactored_game/extra_ros2_packages/hri_actions_msgs /ros2_ws/src/hri_actions_msgs
+COPY refactored_game/extra_ros2_packages/audio_tts_msgs /ros2_ws/src/audio_tts_msgs
+
+WORKDIR /ros2_ws
+RUN . /opt/ros/humble/setup.sh && \
+    colcon build --symlink-install --packages-select generic_ui_interfaces hri_actions_msgs audio_tts_msgs
+
+# Copy the harness scripts.
+COPY game_controller/test/integration /tests
+
+RUN cat > /entrypoint.sh <<'EOF'
+#!/bin/bash
+set -e
+source /opt/ros/humble/setup.bash
+source /ros2_ws/install/setup.bash
+exec "$@"
+EOF
+
+RUN chmod +x /entrypoint.sh
+
+ENTRYPOINT ["/entrypoint.sh"]

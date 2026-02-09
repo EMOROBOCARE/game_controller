@@ -1,0 +1,72 @@
+[
+  {
+    "label": "elefante",
+    "value": "elefante",
+    "image": "assets/animal-elefante.svg",
+    "difficulty": null,
+    "type": "animal"
+  },
+  {
+    "label": "perro",
+    "value": "perro",
+    "image": "assets/animal-perro.svg",
+    "difficulty": null,
+    "type": "animal"
+  },
+  {
+    "label": "gato",
+    "value": "gato",
+    "image": "assets/animal-gato.svg",
+    "difficulty": null,
+    "type": "animal"
+  },
+  {
+    "label": "gallina",
+    "value": "gallina",
+    "image": "assets/animal-gallina.svg",
+    "difficulty": null,
+    "type": "animal"
+  },
+  {
+    "label": "vaca",
+    "value": "vaca",
+    "image": "assets/animal-vaca.svg",
+    "difficulty": null,
+    "type": "animal"
+  },
+  {
+    "label": "caballo",
+    "value": "caballo",
+    "image": "assets/animal-caballo.svg",
+    "difficulty": null,
+    "type": "animal"
+  },
+  {
+    "label": "conejo",
+    "value": "conejo",
+    "image": "assets/animal-conejo.svg",
+    "difficulty": null,
+    "type": "animal"
+  },
+  {
+    "label": "mariposa",
+    "value": "mariposa",
+    "image": "assets/animal-mariposa.svg",
+    "difficulty": null,
+    "type": "animal"
+  },
+  {
+    "label": "pájaro",
+    "value": "pájaro",
+    "image": "assets/animal-pajaro.svg",
+    "difficulty": null,
+    "type": "animal"
+  },
+  {
+    "label": "pez",
+    "value": "pez",
+    "image": "assets/animal-pez.svg",
+    "difficulty": null,
+    "type": "animal"
+  }
+]

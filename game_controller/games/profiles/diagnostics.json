@@ -1,0 +1,16 @@
+{
+  "profile": "diagnostics",
+  "description": "Telemetry and diagnostic reporting",
+  "required": false,
+  "ros2": {
+    "topics": {
+      "publish": [
+        {"name": "/diagnostics", "type": "diagnostic_msgs/msg/DiagnosticArray", "purpose": "Publish game diagnostics and metrics"}
+      ]
+    }
+  },
+  "fallback": {
+    "strategy": "log",
+    "description": "Log diagnostics locally when topic unavailable"
+  }
+}

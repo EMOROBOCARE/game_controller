@@ -1,0 +1,67 @@
+{
+  "slug": "formas",
+  "title": "Formas",
+  "image": "assets/formas.png",
+  "intro": "Vamos a jugar a las formas.",
+  "correct_effects": [
+    "confetti",
+    "sparkles",
+    "emoji"
+  ],
+  "positive_feedback": [
+    "¡Genial! Es {expr}",
+    "¡Muy bien! Es {expr}",
+    "¡Perfecto! Es {expr}"
+  ],
+  "hint_timeout": 8,
+  "supportedPhases": [
+    "P1",
+    "P2",
+    "P3",
+    "P4_YESNO",
+    "P6",
+    "P7"
+  ],
+  "difficulties": {
+    "basic": {
+      "level": "basic",
+      "optionsCount": 2
+    },
+    "intermediate": {
+      "level": "intermediate",
+      "optionsCount": 3
+    },
+    "advanced": {
+      "level": "advanced",
+      "optionsCount": 4
+    }
+  },
+  "phaseConfig": {
+    "P1": {
+      "phase_introduction": "Une las formas iguales.",
+      "prompt": "Une {forma} con {forma}"
+    },
+    "P2": {
+      "phase_introduction": "Repite el nombre de la forma.",
+      "prompt": "¿Qué forma es? Es {forma}."
+    },
+    "P3": {
+      "phase_introduction": "Señala la forma correcta.",
+      "prompt": "Señala {forma}"
+    },
+    "P4_YESNO": {
+      "phase_introduction": "Responde sí o no a las preguntas.",
+      "prompt": "¿Es esto {forma}?"
+    },
+    "P6": {
+      "phase_introduction": "Dime qué forma quieres señalar.",
+      "prompt": "¿Dónde está la forma?",
+      "successResponse": "Aquííí"
+    },
+    "P7": {
+      "phase_introduction": "¿Cuál es la forma correcta?",
+      "prompt": "¿Es un {option1} o {option2}?"
+    }
+  },
+  "answerType": "shapes"
+}

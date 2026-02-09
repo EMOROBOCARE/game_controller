@@ -1,0 +1,64 @@
+\documentclass{article}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{geometry}
+\geometry{margin=1in}
+
+\title{Game Controller Test Report}
+\author{Codex CLI}
+\date{February 3, 2026}
+
+\begin{document}
+\maketitle
+
+\section{Scope}
+Reviewed and improved the following test suites:
+\begin{itemize}
+  \item \texttt{game\_controller/test/test\_correctness.py}
+  \item \texttt{game\_controller/test/test\_v2\_builder.py}
+  \item \texttt{test/integration/test\_game\_flow.py}
+\end{itemize}
+
+\section{Improvements}
+\begin{itemize}
+  \item Expanded correctness tests to cover multiple-choice ID matching, yes/no fallbacks, tracing completion, default candidate matching, and non-dict metadata handling.
+  \item Added phase normalization and filtering edge cases for P4/P5 to P4\_YESNO mapping, difficulty fallback, zero limit handling, and phase-config override verification.
+  \item Reduced integration test duplication and added unique user IDs per test to minimize cross-test state collisions.
+\end{itemize}
+
+\section{Test Execution}
+All tests are expected to run via Docker. The supported command is:
+\begin{itemize}
+  \item \texttt{docker compose -f docker-compose.tests.yml up --build --abort-on-container-exit}
+\end{itemize}
+
+Local commands attempted (not supported):
+\begin{itemize}
+  \item \texttt{pytest -q game\_controller/test/test\_correctness.py game\_controller/test/test\_v2\_builder.py}
+  \item \texttt{python -m pytest -q game\_controller/test/test\_correctness.py game\_controller/test/test\_v2\_builder.py}
+  \item \texttt{python3 -m pytest -q game\_controller/test/test\_correctness.py game\_controller/test/test\_v2\_builder.py}
+  \item \texttt{python3 -m pip install pytest}
+  \item \texttt{python3 -m ensurepip --user}
+\end{itemize}
+
+\section{Errors and Causes}
+\begin{enumerate}
+  \item \textbf{Error:} \texttt{pytest: command not found}.\\
+        \textbf{Cause:} \texttt{pytest} is not installed or not on \texttt{PATH}.
+  \item \textbf{Error:} \texttt{python: command not found}.\\
+        \textbf{Cause:} Only \texttt{python3} is available in this environment.
+  \item \textbf{Error:} \texttt{No module named pytest}.\\
+        \textbf{Cause:} \texttt{pytest} is not installed in the system Python environment.
+  \item \textbf{Error:} \texttt{No module named pip}.\\
+        \textbf{Cause:} \texttt{pip} is not installed for the system Python.
+  \item \textbf{Error:} \texttt{ensurepip is disabled}.\\
+        \textbf{Cause:} Debian/Ubuntu disables \texttt{ensurepip}; \texttt{python3-pip} must be installed via \texttt{apt}.
+\end{enumerate}
+
+\section{Recommended Next Steps}
+\begin{itemize}
+  \item Run tests via Docker using \texttt{docker compose -f docker-compose.tests.yml up --build --abort-on-container-exit}.
+  \item E2E tests should be run via Docker with \texttt{docker compose -f docker-compose.e2e.yml up --build --abort-on-container-exit}.
+\end{itemize}
+
+\end{document}

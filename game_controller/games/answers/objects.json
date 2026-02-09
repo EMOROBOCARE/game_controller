@@ -1,0 +1,58 @@
+[
+  {
+    "label": "la pera",
+    "value": "la pera",
+    "image": "assets/object-pera.svg",
+    "difficulty": null,
+    "type": "objeto"
+  },
+  {
+    "label": "el tomate",
+    "value": "el tomate",
+    "image": "assets/object-tomate.svg",
+    "difficulty": null,
+    "type": "objeto"
+  },
+  {
+    "label": "la manzana",
+    "value": "la manzana",
+    "image": "assets/object-manzana.svg",
+    "difficulty": null,
+    "type": "objeto"
+  },
+  {
+    "label": "el plátano",
+    "value": "el plátano",
+    "image": "assets/object-platano.svg",
+    "difficulty": null,
+    "type": "objeto"
+  },
+  {
+    "label": "la naranja",
+    "value": "la naranja",
+    "image": "assets/object-naranja.svg",
+    "difficulty": null,
+    "type": "objeto"
+  },
+  {
+    "label": "el limón",
+    "value": "el limón",
+    "image": "assets/object-limon.svg",
+    "difficulty": null,
+    "type": "objeto"
+  },
+  {
+    "label": "la zanahoria",
+    "value": "la zanahoria",
+    "image": "assets/object-zanahoria.svg",
+    "difficulty": null,
+    "type": "objeto"
+  },
+  {
+    "label": "el pepino",
+    "value": "el pepino",
+    "image": "assets/object-pepino.svg",
+    "difficulty": null,
+    "type": "objeto"
+  }
+]

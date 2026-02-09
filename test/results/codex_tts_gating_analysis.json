@@ -1,0 +1,151 @@
+{
+  "counts": {
+    "manifest_records": 57,
+    "decision_state_records": 65,
+    "decision_event_records": 64,
+    "question_present_states": 13,
+    "question_present_with_on_complete": 13,
+    "question_present_missing_on_complete": 0,
+    "question_present_next_wait_input_ok": 13,
+    "contract_invariant_violations": 0,
+    "anomaly_count": 0,
+    "delta_min_sec": 0.15530705499986652,
+    "delta_median_sec": 0.15636592399823712,
+    "delta_max_sec": 0.16020884799945634,
+    "delta_lt_0_02_sec": 0,
+    "delta_negative": 0
+  },
+  "question_present_events": [
+    {
+      "tx": 3,
+      "state_ts": 37113.718081881,
+      "on_complete_ts": 37113.878290729,
+      "delta_sec": 0.16020884799945634,
+      "next_state": "WAIT_INPUT",
+      "next_tx": 4,
+      "questionType": "multiple_choice",
+      "phase": "P1"
+    },
+    {
+      "tx": 10,
+      "state_ts": 37116.811100511,
+      "on_complete_ts": 37116.966697139,
+      "delta_sec": 0.1555966280066059,
+      "next_state": "WAIT_INPUT",
+      "next_tx": 11,
+      "questionType": "speech",
+      "phase": "P2"
+    },
+    {
+      "tx": 15,
+      "state_ts": 37119.589629576,
+      "on_complete_ts": 37119.746793307,
+      "delta_sec": 0.15716373099712655,
+      "next_state": "WAIT_INPUT",
+      "next_tx": 16,
+      "questionType": "multiple_choice",
+      "phase": "P3"
+    },
+    {
+      "tx": 19,
+      "state_ts": 37121.963343101,
+      "on_complete_ts": 37122.118650156,
+      "delta_sec": 0.15530705499986652,
+      "next_state": "WAIT_INPUT",
+      "next_tx": 20,
+      "questionType": "multiple_choice",
+      "phase": "P3"
+    },
+    {
+      "tx": 24,
+      "state_ts": 37124.834866703,
+      "on_complete_ts": 37124.990917092,
+      "delta_sec": 0.15605038899957435,
+      "next_state": "WAIT_INPUT",
+      "next_tx": 25,
+      "questionType": "yes_no",
+      "phase": "P4_YESNO"
+    },
+    {
+      "tx": 29,
+      "state_ts": 37127.711652359,
+      "on_complete_ts": 37127.868906699,
+      "delta_sec": 0.15725433999614324,
+      "next_state": "WAIT_INPUT",
+      "next_tx": 30,
+      "questionType": "yes_no",
+      "phase": "P4_YESNO"
+    },
+    {
+      "tx": 32,
+      "state_ts": 37128.57914735,
+      "on_complete_ts": 37128.734534916,
+      "delta_sec": 0.1553875660029007,
+      "next_state": "WAIT_INPUT",
+      "next_tx": 33,
+      "questionType": "pointing",
+      "phase": "P6"
+    },
+    {
+      "tx": 35,
+      "state_ts": 37129.346384693,
+      "on_complete_ts": 37129.501756369,
+      "delta_sec": 0.15537167599541135,
+      "next_state": "WAIT_INPUT",
+      "next_tx": 36,
+      "questionType": "multiple_choice",
+      "phase": "P7"
+    },
+    {
+      "tx": 43,
+      "state_ts": 37134.542628175,
+      "on_complete_ts": 37134.699394223,
+      "delta_sec": 0.15676604799955385,
+      "next_state": "WAIT_INPUT",
+      "next_tx": 44,
+      "questionType": "multiple_choice",
+      "phase": "P1"
+    },
+    {
+      "tx": 46,
+      "state_ts": 37136.712078532,
+      "on_complete_ts": 37136.868577841,
+      "delta_sec": 0.15649930899962783,
+      "next_state": "WAIT_INPUT",
+      "next_tx": 47,
+      "questionType": "speech",
+      "phase": "P2"
+    },
+    {
+      "tx": 49,
+      "state_ts": 37138.881116434,
+      "on_complete_ts": 37139.037482358,
+      "delta_sec": 0.15636592399823712,
+      "next_state": "WAIT_INPUT",
+      "next_tx": 50,
+      "questionType": "multiple_choice",
+      "phase": "P1"
+    },
+    {
+      "tx": 54,
+      "state_ts": 37141.660614547,
+      "on_complete_ts": 37141.816692375,
+      "delta_sec": 0.15607782800361747,
+      "next_state": "WAIT_INPUT",
+      "next_tx": 55,
+      "questionType": "speech",
+      "phase": "P2"
+    },
+    {
+      "tx": 59,
+      "state_ts": 37144.534082103,
+      "on_complete_ts": 37144.690487743,
+      "delta_sec": 0.15640564000204904,
+      "next_state": "WAIT_INPUT",
+      "next_tx": 60,
+      "questionType": "multiple_choice",
+      "phase": "P3"
+    }
+  ],
+  "anomalies": []
+}

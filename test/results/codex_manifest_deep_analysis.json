@@ -1,0 +1,484 @@
+{
+  "anomalies": [
+    {
+      "reason": "Startup manifest uses config.state.transactionId=0 while first decision/state log starts at 1 (placeholder vs published tx).",
+      "severity": "info",
+      "suggested_fix": "Clarify in contract that manifest initial state may use tx=0, or set it to first observed decision transactionId for consistency.",
+      "where": {
+        "step": "startup_menu",
+        "ts": 34233.405764976
+      }
+    },
+    {
+      "reason": "In PAUSED, manifest config.state.gameState retains the last GAME gameState (e.g., WAIT_INPUT) while /decision/state.gameState is null.",
+      "severity": "info",
+      "suggested_fix": "Either keep and document this as \"lastGameState\", or set config.state.gameState=null when system!=GAME to match decision_state schema.",
+      "where": {
+        "step": "run_a_paused",
+        "transactionId": 5,
+        "ts": 34235.585174523
+      }
+    },
+    {
+      "reason": "Manifest snapshots taken at \"*_question_present_*\" steps often already reflect the subsequent WAIT_INPUT state (tx+1). This suggests QUESTION_PRESENT is transient (~0.10s median in these logs), so a polling UI could miss it.",
+      "severity": "warn",
+      "suggested_fix": "Ensure UI does not depend on seeing QUESTION_PRESENT separately (use question text + inputDisabled). If needed, add a stable UI-facing substate (e.g., uiPhase=\"speaking\"|\"awaiting_input\") or enforce a minimum dwell time.",
+      "where": {
+        "count": 11
+      }
+    },
+    {
+      "reason": "During PAUSED, inputDisabled=true while Resume/Stop/Reset/Skip controls are visible. A UI that globally disables inputs based on inputDisabled might also disable Resume.",
+      "severity": "warn",
+      "suggested_fix": "Clarify contract: inputDisabled should gate answer inputs only, or split into answersDisabled vs controlsDisabled.",
+      "where": {
+        "step": "run_a_paused",
+        "transactionId": 5,
+        "ts": 34235.585174523
+      }
+    },
+    {
+      "reason": "Game/menu images use relative paths/IDs (e.g., assets/colores.png, blue_circle). Without a defined base URL/CDN strategy, a real browser UI cannot resolve these reliably.",
+      "severity": "warn",
+      "suggested_fix": "Standardize an asset base URL (env/config) and have game_controller expand/normalize image URLs before publishing manifests.",
+      "where": {
+        "scope": "manifest.games[].image and question/option img fields"
+      }
+    },
+    {
+      "reason": "UI integration relies on JSON encoded in std_msgs/String, which is brittle (validation, tooling, backward-compat parsing).",
+      "severity": "info",
+      "suggested_fix": "Add typed services/messages (start_session, control_session, typed selections) as recommended in GC_integration.md to reduce ambiguity and add synchronous acknowledgments.",
+      "where": {
+        "scope": "ops: /game/user_selector /game/game_selector /ui/input"
+      }
+    }
+  ],
+  "contract_invariants": [
+    {
+      "description": "Manifest includes user_panel/UserPanel and game_screen/GameScreenComponent; layout references only existing instances",
+      "id": "A1",
+      "notes": {
+        "bad_instances": 0,
+        "bad_layout_refs": 0
+      },
+      "pass": true
+    },
+    {
+      "description": "game_screen.config.controls exists with boolean keys showPause/showResume/showStop/showReset/showSkipPhase",
+      "id": "A2",
+      "notes": {
+        "violations": 0
+      },
+      "pass": true
+    },
+    {
+      "description": "Menu state correctness: mode==menu, inputDisabled==false, all controls hidden",
+      "id": "A3",
+      "notes": {
+        "menu_snapshots": 4,
+        "violations": 0
+      },
+      "pass": true
+    },
+    {
+      "description": "Game state correctness: mode==game and showStop/showReset/showSkipPhase are true",
+      "id": "A4",
+      "notes": {
+        "game_snapshots": 53,
+        "violations": 0
+      },
+      "pass": true
+    },
+    {
+      "description": "No empty prompts in gameplay: for phase_intro/user-question types, question.text is non-empty",
+      "id": "A5",
+      "notes": {
+        "checked_snapshots": 33,
+        "violations": 0
+      },
+      "pass": true
+    },
+    {
+      "description": "Ops/registry contract: componentRegistry contains UserPanel+GameScreenComponent; ops include game_selector+user_selector+ui_input",
+      "id": "A6",
+      "notes": {
+        "violations": 0
+      },
+      "pass": true
+    }
+  ],
+  "control_events": [
+    {
+      "command": "PAUSE",
+      "event_ts": 34235.577320936,
+      "expected": {
+        "decision_state": {
+          "state": "PAUSED"
+        },
+        "manifest": {
+          "controls": {
+            "showPause": false,
+            "showResume": true
+          },
+          "inputDisabled": true
+        }
+      },
+      "notes": [],
+      "observed": {
+        "manifest_after": {
+          "controls": {
+            "showPause": false,
+            "showReset": true,
+            "showResume": true,
+            "showSkipPhase": true,
+            "showStop": true
+          },
+          "inputDisabled": true,
+          "mode": "game",
+          "phase": "P1",
+          "state": {
+            "gameState": "WAIT_INPUT",
+            "sessionId": 1,
+            "system": "PAUSED",
+            "transactionId": 5
+          },
+          "step": "run_a_paused",
+          "ts": 34235.585174523
+        },
+        "next_state": {
+          "gameState": null,
+          "payload_phase": null,
+          "state": "PAUSED",
+          "transactionId": 5,
+          "ts": 34235.577748452
+        }
+      },
+      "pass": true
+    },
+    {
+      "command": "RESUME",
+      "event_ts": 34235.587063272,
+      "expected": {
+        "decision_state": {
+          "gameState": "WAIT_INPUT",
+          "state": "GAME"
+        },
+        "manifest": {
+          "controls": {
+            "showPause": true,
+            "showResume": false
+          },
+          "inputDisabled": false
+        }
+      },
+      "notes": [],
+      "observed": {
+        "manifest_after": {
+          "controls": {
+            "showPause": true,
+            "showReset": true,
+            "showResume": false,
+            "showSkipPhase": true,
+            "showStop": true
+          },
+          "inputDisabled": false,
+          "mode": "game",
+          "phase": "P1",
+          "state": {
+            "gameState": "WAIT_INPUT",
+            "sessionId": 1,
+            "system": "GAME",
+            "transactionId": 6
+          },
+          "step": "run_a_resumed",
+          "ts": 34235.69047291
+        },
+        "next_state": {
+          "gameState": "WAIT_INPUT",
+          "payload_phase": null,
+          "state": "GAME",
+          "transactionId": 6,
+          "ts": 34235.587571729
+        }
+      },
+      "pass": true
+    },
+    {
+      "command": "STOP",
+      "event_ts": 34241.140025761,
+      "expected": {
+        "decision_state": {
+          "state": "IDLE"
+        },
+        "manifest": {
+          "controls": {
+            "showPause": false,
+            "showReset": false,
+            "showResume": false,
+            "showSkipPhase": false,
+            "showStop": false
+          },
+          "inputDisabled": false,
+          "mode": "menu"
+        }
+      },
+      "notes": [],
+      "observed": {
+        "manifest_after": {
+          "controls": {
+            "showPause": false,
+            "showReset": false,
+            "showResume": false,
+            "showSkipPhase": false,
+            "showStop": false
+          },
+          "inputDisabled": false,
+          "mode": "menu",
+          "phase": "",
+          "state": {
+            "gameState": null,
+            "sessionId": null,
+            "system": "IDLE",
+            "transactionId": 17
+          },
+          "step": "run_a_menu_after_stop",
+          "ts": 34241.243640822
+        },
+        "next_state": {
+          "gameState": null,
+          "payload_phase": null,
+          "state": "IDLE",
+          "transactionId": 17,
+          "ts": 34241.140480362
+        }
+      },
+      "pass": true
+    },
+    {
+      "command": "SKIP_PHASE",
+      "event_ts": 34255.26384784,
+      "expected": {
+        "decision_state": {
+          "gameState": "PHASE_INTRO",
+          "state": "GAME"
+        },
+        "manifest": {
+          "controls": {
+            "showPause": true,
+            "showReset": true,
+            "showResume": false,
+            "showSkipPhase": true,
+            "showStop": true
+          },
+          "mode": "game"
+        }
+      },
+      "notes": [],
+      "observed": {
+        "manifest_after": {
+          "controls": {
+            "showPause": true,
+            "showReset": true,
+            "showResume": false,
+            "showSkipPhase": true,
+            "showStop": true
+          },
+          "inputDisabled": true,
+          "mode": "game",
+          "phase": "P2",
+          "state": {
+            "gameState": "PHASE_INTRO",
+            "sessionId": 3,
+            "system": "GAME",
+            "transactionId": 45
+          },
+          "step": "run_c_controls_skip_intro_P2",
+          "ts": 34255.271488878
+        },
+        "next_state": {
+          "gameState": "PHASE_INTRO",
+          "payload_phase": "P2",
+          "state": "GAME",
+          "transactionId": 45,
+          "ts": 34255.264337071
+        }
+      },
+      "pass": true
+    },
+    {
+      "command": "RESET",
+      "event_ts": 34257.375040503,
+      "expected": {
+        "decision_state": {
+          "gameState": "PHASE_INTRO",
+          "state": "GAME"
+        },
+        "manifest": {
+          "controls": {
+            "showPause": true,
+            "showReset": true,
+            "showResume": false,
+            "showSkipPhase": true,
+            "showStop": true
+          },
+          "mode": "game"
+        }
+      },
+      "notes": [],
+      "observed": {
+        "manifest_after": {
+          "controls": {
+            "showPause": true,
+            "showReset": true,
+            "showResume": false,
+            "showSkipPhase": true,
+            "showStop": true
+          },
+          "inputDisabled": true,
+          "mode": "game",
+          "phase": "P1",
+          "state": {
+            "gameState": "PHASE_INTRO",
+            "sessionId": 3,
+            "system": "GAME",
+            "transactionId": 48
+          },
+          "step": "run_c_controls_reset_intro_P1",
+          "ts": 34257.479210555
+        },
+        "next_state": {
+          "gameState": "PHASE_INTRO",
+          "payload_phase": "P1",
+          "state": "GAME",
+          "transactionId": 48,
+          "ts": 34257.375491023
+        }
+      },
+      "pass": true
+    }
+  ],
+  "manifest_coherence": {
+    "durations_summary_s": {
+      "CORRECT": {
+        "max_s": 0.6064427540040924,
+        "median_s": 0.6048922010013484,
+        "min_s": 0.6028001699960441,
+        "n": 10,
+        "p90_s": 0.6057344650034793
+      },
+      "FAIL_L1": {
+        "max_s": 2.0039891409978736,
+        "median_s": 2.0030494530001306,
+        "min_s": 2.0026356460002717,
+        "n": 8,
+        "p90_s": 2.0034066880034516
+      },
+      "PHASE_INTRO": {
+        "max_s": 2.004423908001627,
+        "median_s": 2.002975832001539,
+        "min_s": 2.0027061220025644,
+        "n": 5,
+        "p90_s": 2.004178964998573
+      },
+      "QUESTION_PRESENT": {
+        "max_s": 0.10221610100416001,
+        "median_s": 0.10187097099696985,
+        "min_s": 0.053523114998824894,
+        "n": 13,
+        "p90_s": 0.10211816499941051
+      },
+      "WAIT_INPUT": {
+        "max_s": 0.1094163700036006,
+        "median_s": 0.0057820504989649635,
+        "min_s": 0.0030752259990549646,
+        "n": 22,
+        "p90_s": 0.007874074995925184
+      }
+    },
+    "question_present_step_mismatches": 11,
+    "step_vs_manifest_tx_mismatch_count": 12
+  },
+  "on_complete": {
+    "mismatches": [],
+    "total": 38,
+    "transition_counts": [
+      {
+        "count": 13,
+        "from": {
+          "gameState": "QUESTION_PRESENT",
+          "system": "GAME"
+        },
+        "to": {
+          "gameState": "WAIT_INPUT",
+          "system": "GAME"
+        }
+      },
+      {
+        "count": 8,
+        "from": {
+          "gameState": "CORRECT",
+          "system": "GAME"
+        },
+        "to": {
+          "gameState": "QUESTION_PRESENT",
+          "system": "GAME"
+        }
+      },
+      {
+        "count": 8,
+        "from": {
+          "gameState": "FAIL_L1",
+          "system": "GAME"
+        },
+        "to": {
+          "gameState": "WAIT_INPUT",
+          "system": "GAME"
+        }
+      },
+      {
+        "count": 5,
+        "from": {
+          "gameState": "PHASE_INTRO",
+          "system": "GAME"
+        },
+        "to": {
+          "gameState": "QUESTION_PRESENT",
+          "system": "GAME"
+        }
+      },
+      {
+        "count": 2,
+        "from": {
+          "gameState": "CORRECT",
+          "system": "GAME"
+        },
+        "to": {
+          "gameState": "PHASE_COMPLETE",
+          "system": "GAME"
+        }
+      },
+      {
+        "count": 2,
+        "from": {
+          "gameState": "PHASE_COMPLETE",
+          "system": "GAME"
+        },
+        "to": {
+          "gameState": null,
+          "system": "IDLE"
+        }
+      }
+    ]
+  },
+  "total_records_events": 64,
+  "total_records_manifest": 57,
+  "total_records_state": 65,
+  "unique_manifest_hashes": 46,
+  "user_intent": {
+    "correct_false": 8,
+    "correct_true": 10,
+    "mismatches": [],
+    "total": 18
+  }
+}

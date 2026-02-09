@@ -1,0 +1,97 @@
+# Docker Compose for E2E Tests
+#
+# This compose file runs the complete game system with a test runner.
+#
+# Usage:
+#   docker compose -f docker-compose.e2e.yml up --build --abort-on-container-exit
+#
+# Or run tests manually:
+#   docker compose -f docker-compose.e2e.yml up -d
+#   docker compose -f docker-compose.e2e.yml exec test_runner pytest -v
+#   docker compose -f docker-compose.e2e.yml down
+
+services:
+  # Decision Making - Phase-based FSM
+  decision_making:
+    build:
+      context: ../refactored_game/decision_making_ws
+      dockerfile: Dockerfile
+    environment:
+      ROS_DOMAIN_ID: 42  # Isolated domain for tests
+    networks:
+      - rosnet_e2e
+    healthcheck:
+      test: ["CMD", "bash", "-c", "source /opt/ros/humble/setup.bash && ros2 node list | grep -q decision_making"]
+      interval: 3s
+      timeout: 10s
+      retries: 15
+      start_period: 10s
+
+  # Game Controller - Orchestration
+  game_controller:
+    build:
+      context: ..
+      dockerfile: game_controller/game_controller/Dockerfile.compose
+      network: host
+    environment:
+      ROS_DOMAIN_ID: 42  # Isolated domain for tests
+    depends_on:
+      decision_making:
+        condition: service_healthy
+    networks:
+      - rosnet_e2e
+    healthcheck:
+      test: ["CMD", "bash", "-c", "source /opt/ros/humble/setup.bash && source /ros2_ws/install/setup.bash && ros2 node list | grep -q game_controller"]
+      interval: 3s
+      timeout: 10s
+      retries: 15
+      start_period: 10s
+
+  # Generic UI Backend
+  backend:
+    build:
+      context: ../generic_ui
+      dockerfile: backend/Dockerfile
+      network: host
+    environment:
+      ROS_DOMAIN_ID: 42  # Isolated domain for tests
+      UI_GATEWAY_PORT: 8080
+      UI_SIMPLE_UI_DEMO: "0"
+      UI_MANIFEST_PATH: ""
+    depends_on:
+      decision_making:
+        condition: service_healthy
+    networks:
+      - rosnet_e2e
+
+  # Test Runner
+  test_runner:
+    build:
+      context: ..
+      dockerfile: game_controller/game_controller/Dockerfile.e2e
+      network: host
+    environment:
+      ROS_DOMAIN_ID: 42  # Isolated domain for tests
+      PYTHONPATH: /ros2_ws/src/game_controller/game_controller
+      PYTEST_DISABLE_PLUGIN_AUTOLOAD: "1"
+    depends_on:
+      game_controller:
+        condition: service_healthy
+      backend:
+        condition: service_started
+    networks:
+      - rosnet_e2e
+    volumes:
+      - ./game_controller/test:/tests:ro
+      - /var/run/docker.sock:/var/run/docker.sock
+    command:
+      [
+        "python3", "-m", "pytest",
+        "-v", "--tb=short",
+        "/tests/e2e/test_game_controller_e2e.py",
+        "/tests/e2e/test_game_flow_e2e.py"
+      ]
+
+networks:
+  rosnet_e2e:
+    driver: bridge

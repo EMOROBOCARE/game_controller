@@ -1,0 +1,22 @@
+{
+  "profile": "robot_expression",
+  "description": "Robot facial expressions, LED colors, and visual feedback",
+  "required": false,
+  "ros2": {
+    "topics": {
+      "publish": [
+        {"name": "/robot_face/expression", "type": "hri_msgs/msg/Expression", "purpose": "Set robot facial expression"},
+        {"name": "/robot_face/color", "type": "std_msgs/msg/ColorRGBA", "purpose": "Set robot face color"}
+      ]
+    },
+    "services": {
+      "client": [
+        {"name": "/set_leds", "type": "emorobcare_led_service/srv/SetLEDs", "purpose": "Control robot LEDs"}
+      ]
+    }
+  },
+  "fallback": {
+    "strategy": "skip",
+    "description": "Skip robot expression commands when hardware unavailable"
+  }
+}

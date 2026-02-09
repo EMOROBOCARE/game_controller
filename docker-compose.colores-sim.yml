@@ -1,0 +1,112 @@
+# Docker Compose for Colores Full Game Simulation
+#
+# This compose file runs a complete colores game simulation that captures
+# every manifest state transition for UI development reference.
+#
+# Output: All manifest states saved to ui_developer_manifests/colores_full_game/
+#
+# Usage:
+#   docker compose -f docker-compose.colores-sim.yml up --build --abort-on-container-exit
+#
+# View output manifests:
+#   ls -la ../ui_developer_manifests/colores_full_game/
+
+services:
+  # Mock Decision Making - Simulates FSM behavior
+  mock_decision_making:
+    build:
+      context: .
+      dockerfile: test/Dockerfile.mocks
+      network: host
+    environment:
+      ROS_DOMAIN_ID: 88  # Dedicated domain for simulation
+      MOCK_NODE: decision_making
+    networks:
+      - rosnet_colores_sim
+    command: ["python3", "/test_mocks/mock_decision_making.py"]
+    healthcheck:
+      test: ["CMD", "bash", "-c", "source /opt/ros/humble/setup.bash && ros2 node list | grep -q mock_decision_making"]
+      interval: 2s
+      timeout: 5s
+      retries: 10
+      start_period: 5s
+
+  # Mock Generic UI - Simulates UpdateManifest service and captures manifests
+  mock_generic_ui:
+    build:
+      context: .
+      dockerfile: test/Dockerfile.mocks
+      network: host
+    environment:
+      ROS_DOMAIN_ID: 88  # Dedicated domain for simulation
+      MOCK_NODE: generic_ui
+    networks:
+      - rosnet_colores_sim
+    command: ["python3", "/test_mocks/mock_generic_ui.py"]
+    healthcheck:
+      test: ["CMD", "bash", "-c", "source /opt/ros/humble/setup.bash && ros2 service list | grep -q update_manifest"]
+      interval: 2s
+      timeout: 5s
+      retries: 10
+      start_period: 5s
+
+  # Game Controller - Under Test
+  game_controller:
+    build:
+      context: game_controller
+      dockerfile: Dockerfile.isolated
+      network: host
+    environment:
+      ROS_DOMAIN_ID: 88  # Dedicated domain for simulation
+    depends_on:
+      mock_decision_making:
+        condition: service_healthy
+      mock_generic_ui:
+        condition: service_healthy
+    networks:
+      - rosnet_colores_sim
+    healthcheck:
+      test: ["CMD", "bash", "-c", "source /opt/ros/humble/setup.bash && source /ros2_ws/install/setup.bash && ros2 node list | grep -q game_controller"]
+      interval: 2s
+      timeout: 5s
+      retries: 10
+      start_period: 5s
+
+  # Colores Game Simulator - Runs complete game and captures all manifests
+  colores_simulator:
+    build:
+      context: .
+      dockerfile: test/Dockerfile.test_isolated
+      network: host
+    environment:
+      ROS_DOMAIN_ID: 88  # Dedicated domain for simulation
+      PYTHONUNBUFFERED: 1
+      MANIFEST_OUTPUT_DIR: /output/colores_full_game
+    depends_on:
+      game_controller:
+        condition: service_healthy
+    networks:
+      - rosnet_colores_sim
+    volumes:
+      # Mount output directory outside container for easy access
+      - ../ui_developer_manifests:/output
+    command: >
+      bash -c "
+        source /opt/ros/humble/setup.bash &&
+        source /test_ws/install/setup.bash &&
+        echo '======================================' &&
+        echo 'Colores Full Game Simulation' &&
+        echo '======================================' &&
+        echo 'Output: /output/colores_full_game/' &&
+        echo '' &&
+        python3 /tests/integration/simulate_colores_full_game.py &&
+        echo '' &&
+        echo '======================================' &&
+        echo 'Simulation Complete!' &&
+        echo 'View results in: ../ui_developer_manifests/colores_full_game/' &&
+        echo '======================================'
+      "
+
+networks:
+  rosnet_colores_sim:
+    driver: bridge

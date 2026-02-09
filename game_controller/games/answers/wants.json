@@ -1,0 +1,66 @@
+[
+  {
+    "label": "pan",
+    "value": "pan",
+    "image": "assets/want-pan.svg",
+    "difficulty": null,
+    "type": "deseo",
+    "verb": "comer"
+  },
+  {
+    "label": "agua",
+    "value": "agua",
+    "image": "assets/want-agua.svg",
+    "difficulty": null,
+    "type": "deseo",
+    "verb": "beber"
+  },
+  {
+    "label": "leche",
+    "value": "leche",
+    "image": "assets/want-leche.svg",
+    "difficulty": null,
+    "type": "deseo",
+    "verb": "beber"
+  },
+  {
+    "label": "zumo",
+    "value": "zumo",
+    "image": "assets/want-zumo.svg",
+    "difficulty": null,
+    "type": "deseo",
+    "verb": "beber"
+  },
+  {
+    "label": "galletas",
+    "value": "galletas",
+    "image": "assets/want-galletas.svg",
+    "difficulty": null,
+    "type": "deseo",
+    "verb": "comer"
+  },
+  {
+    "label": "jugar",
+    "value": "jugar",
+    "image": "assets/want-jugar.svg",
+    "difficulty": null,
+    "type": "deseo",
+    "verb": "jugar"
+  },
+  {
+    "label": "dormir",
+    "value": "dormir",
+    "image": "assets/want-dormir.svg",
+    "difficulty": null,
+    "type": "deseo",
+    "verb": "dormir"
+  },
+  {
+    "label": "ir al baño",
+    "value": "ir al baño",
+    "image": "assets/want-bano.svg",
+    "difficulty": null,
+    "type": "deseo",
+    "verb": "ir"
+  }
+]

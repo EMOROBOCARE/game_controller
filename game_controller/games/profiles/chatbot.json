@@ -1,0 +1,18 @@
+{
+  "profile": "chatbot",
+  "description": "LLM-based rephrasing, response generation, and answer evaluation",
+  "required": false,
+  "ros2": {
+    "services": {
+      "client": [
+        {"name": "/chatbot/get_response", "type": "chatbot_msgs/srv/GetResponse", "purpose": "Generate contextual responses"},
+        {"name": "/chatbot/rephrase", "type": "chatbot_msgs/srv/Rephrase", "purpose": "Rephrase prompts dynamically"},
+        {"name": "/chatbot/evaluate_answer", "type": "chatbot_msgs/srv/EvaluateAnswer", "purpose": "Evaluate user answers with LLM"}
+      ]
+    }
+  },
+  "fallback": {
+    "strategy": "static",
+    "description": "Use static prompts from game JSON when chatbot unavailable"
+  }
+}

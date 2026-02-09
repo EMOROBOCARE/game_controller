@@ -1,0 +1,58 @@
+[
+  {
+    "label": "círculo",
+    "value": "círculo",
+    "image": "assets/shape-circulo.svg",
+    "difficulty": null,
+    "type": "forma"
+  },
+  {
+    "label": "cuadrado",
+    "value": "cuadrado",
+    "image": "assets/shape-cuadrado.svg",
+    "difficulty": null,
+    "type": "forma"
+  },
+  {
+    "label": "triángulo",
+    "value": "triángulo",
+    "image": "assets/shape-triangulo.svg",
+    "difficulty": null,
+    "type": "forma"
+  },
+  {
+    "label": "rectángulo",
+    "value": "rectángulo",
+    "image": "assets/shape-rectangulo.svg",
+    "difficulty": null,
+    "type": "forma"
+  },
+  {
+    "label": "estrella",
+    "value": "estrella",
+    "image": "assets/shape-estrella.svg",
+    "difficulty": null,
+    "type": "forma"
+  },
+  {
+    "label": "rombo",
+    "value": "rombo",
+    "image": "assets/shape-rombo.svg",
+    "difficulty": null,
+    "type": "forma"
+  },
+  {
+    "label": "corazón",
+    "value": "corazón",
+    "image": "assets/shape-corazon.svg",
+    "difficulty": null,
+    "type": "forma"
+  },
+  {
+    "label": "óvalo",
+    "value": "óvalo",
+    "image": "assets/shape-ovalo.svg",
+    "difficulty": null,
+    "type": "forma"
+  }
+]

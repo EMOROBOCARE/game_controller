@@ -1,0 +1,17 @@
+{
+  "profile": "tts",
+  "description": "Text-to-speech and expressive communication",
+  "required": false,
+  "ros2": {
+    "actions": {
+      "client": [
+        {"name": "/say", "type": "audio_tts_msgs/action/TTS", "purpose": "Basic text-to-speech"},
+        {"name": "/expressive_say", "type": "audio_tts_msgs/action/Communication", "purpose": "TTS with expressions and gestures"}
+      ]
+    }
+  },
+  "fallback": {
+    "strategy": "ui_text",
+    "description": "Display text in UI when TTS unavailable"
+  }
+}

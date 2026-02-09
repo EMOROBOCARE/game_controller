@@ -1,0 +1,53 @@
+# Dockerfile for game_controller ROS2 package
+# Used by docker-compose with context set to parent directory
+FROM ros:humble-ros-base
+
+ENV DEBIAN_FRONTEND=noninteractive
+
+# Install dependencies
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    python3-pip \
+    python3-colcon-common-extensions \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install Python dependencies
+RUN pip3 install --no-cache-dir pydantic pyyaml
+
+# Create workspace
+WORKDIR /ros2_ws/src
+
+# Copy generic_ui_interfaces for the UpdateManifest service
+COPY generic_ui/ros2/generic_ui_interfaces /ros2_ws/src/generic_ui_interfaces
+
+# Copy message interfaces used by game_controller (/intents).
+COPY refactored_game/extra_ros2_packages/hri_actions_msgs /ros2_ws/src/hri_actions_msgs
+
+# Copy audio_tts_msgs for expressive TTS action integration (/expressive_say).
+COPY refactored_game/extra_ros2_packages/audio_tts_msgs /ros2_ws/src/audio_tts_msgs
+
+# Copy game_controller package
+COPY game_controller/game_controller /ros2_ws/src/game_controller
+
+# Build workspace
+WORKDIR /ros2_ws
+RUN . /opt/ros/humble/setup.sh && \
+    colcon build --symlink-install --packages-select generic_ui_interfaces hri_actions_msgs audio_tts_msgs game_controller
+
+# Wrapper script for ros2 command
+RUN printf '%s\n' \
+    '#!/bin/bash' \
+    'set -e' \
+    'source /opt/ros/humble/setup.bash' \
+    'source /ros2_ws/install/setup.bash' \
+    'exec /opt/ros/humble/bin/ros2 "$@"' \
+    > /usr/local/bin/ros2 && chmod +x /usr/local/bin/ros2
+
+# Create entrypoint
+RUN echo '#!/bin/bash\n\
+set -e\n\
+source /opt/ros/humble/setup.bash\n\
+source /ros2_ws/install/setup.bash\n\
+exec "$@"' > /entrypoint.sh && chmod +x /entrypoint.sh
+
+ENTRYPOINT ["/entrypoint.sh"]
+CMD ["ros2", "launch", "game_controller", "game_controller.launch.py"]

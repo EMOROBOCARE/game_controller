@@ -1,0 +1,77 @@
+# Docker Compose for Game Controller System
+#
+# This compose file starts the complete game system:
+# - decision_making: Phase-based FSM for game logic
+# - game_controller: Game orchestration and UI integration
+# - generic_ui backend: WebSocket gateway for UI
+# - generic_ui web: React-based UI shell
+#
+# Usage:
+#   docker compose up
+#
+# To run with rebuild:
+#   docker compose up --build
+
+services:
+  # Decision Making - Phase-based FSM
+  decision_making:
+    build:
+      context: ../refactored_game/decision_making_ws
+      dockerfile: Dockerfile
+    environment:
+      ROS_DOMAIN_ID: 0
+    networks:
+      - rosnet
+    healthcheck:
+      test: ["CMD", "bash", "-c", "source /opt/ros/humble/setup.bash && ros2 node list | grep -q decision_making"]
+      interval: 5s
+      timeout: 10s
+      retries: 10
+      start_period: 15s
+
+  # Game Controller - Orchestration
+  game_controller:
+    build:
+      context: ..
+      dockerfile: game_controller/game_controller/Dockerfile.compose
+      network: host
+    environment:
+      ROS_DOMAIN_ID: 0
+    volumes:
+      # Mount game content for development
+      - ./game_controller/games:/ros2_ws/src/game_controller/games:ro
+    depends_on:
+      decision_making:
+        condition: service_healthy
+    networks:
+      - rosnet
+    healthcheck:
+      test: ["CMD", "bash", "-c", "source /opt/ros/humble/setup.bash && source /ros2_ws/install/setup.bash && ros2 node list | grep -q game_controller"]
+      interval: 5s
+      timeout: 10s
+      retries: 10
+      start_period: 15s
+
+  # Generic UI Backend
+  backend:
+    build:
+      context: ../generic_ui
+      dockerfile: backend/Dockerfile
+      network: host
+    environment:
+      ROS_DOMAIN_ID: 0
+      UI_GATEWAY_PORT: 8080
+      # Don't load demo manifest - wait for game_controller
+      UI_SIMPLE_UI_DEMO: "0"
+      UI_MANIFEST_PATH: ""
+    depends_on:
+      decision_making:
+        condition: service_healthy
+    ports:
+      - "8092:8080"
+    networks:
+      - rosnet
+
+networks:
+  rosnet:
+    driver: bridge

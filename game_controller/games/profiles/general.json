@@ -1,0 +1,23 @@
+{
+  "profile": "general",
+  "description": "Core game controller interactions - required by all games",
+  "required": true,
+  "ros2": {
+    "topics": {
+      "subscribe": [
+        {"name": "/decision/state", "type": "std_msgs/msg/String", "purpose": "Game state updates from FSM"},
+        {"name": "/intents", "type": "hri_actions_msgs/msg/Intent", "purpose": "User input and control commands"}
+      ],
+      "publish": [
+        {"name": "/decision/events", "type": "std_msgs/msg/String", "purpose": "FSM events (GAME_INIT, USER_INTENT, ON_COMPLETE, GAME_CONTROL)"},
+        {"name": "/game/current_user", "type": "std_msgs/msg/Int16", "purpose": "Active user ID"}
+      ]
+    },
+    "services": {
+      "client": [
+        {"name": "/generic_ui/update_manifest", "type": "generic_ui_interfaces/srv/UpdateManifest", "purpose": "UI manifest updates"}
+      ]
+    }
+  },
+  "fallback": null
+}

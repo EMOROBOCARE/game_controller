@@ -1,0 +1,71 @@
+# Game Controller Configuration
+# Topics, timeouts, and game defaults
+
+# ROS2 Topic Configuration
+topics:
+  # Subscriptions
+  decision_state: "/decision/state"
+  intents: "/intents"
+  game_selector: "/game/game_selector"
+  user_selector: "/game/user_selector"
+  
+  # Publications
+  decision_events: "/decision/events"
+  current_user: "/game/current_user"
+  ui_update: "/ui/update"
+
+# Generic UI Service
+generic_ui:
+  update_manifest_service: "/generic_ui/update_manifest"
+  manifest_timeout_sec: 5.0
+
+# Auto-advance timeouts (in seconds)
+# These are the delays before sending ON_COMPLETE for non-interactive states
+auto_advance:
+  phase_intro: 2.0
+  round_setup: 0.05
+  question_present: 0.05
+  fail_l1: 2.0
+  fail_l2: 2.0
+  correct: 0.6
+  phase_complete: 0.3
+
+# Game defaults
+game_defaults:
+  difficulty: "basic"
+  rounds_per_phase: 2
+  phases:
+    - "P1"
+    - "P2"
+    - "P3"
+
+# Colors game specific settings
+colores:
+  # Available colors for option generation
+  colors:
+    - label: "rojo"
+      image: "assets/color-rojo.svg"
+    - label: "verde"
+      image: "assets/color-verde.svg"
+    - label: "azul"
+      image: "assets/color-azul.svg"
+    - label: "amarillo"
+      image: "assets/color-amarillo.svg"
+    - label: "naranja"
+      image: "assets/color-naranja.svg"
+    - label: "morado"
+      image: "assets/color-morado.svg"
+    - label: "rosa"
+      image: "assets/color-rosa.svg"
+    - label: "blanco"
+      image: "assets/color-blanco.svg"
+    - label: "negro"
+      image: "assets/color-negro.svg"
+    - label: "marron"
+      image: "assets/color-marron.svg"
+  
+  # Options count per difficulty
+  options_count:
+    basic: 3
+    intermediate: 4
+    advanced: 4

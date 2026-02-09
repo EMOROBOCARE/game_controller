@@ -1,0 +1,16 @@
+{
+  "profile": "vision",
+  "description": "Scene interaction and object highlighting for visual games",
+  "required": false,
+  "ros2": {
+    "services": {
+      "client": [
+        {"name": "/sim_scene/highlight_object", "type": "my_game_interface/srv/EditObject", "purpose": "Highlight objects in scene"}
+      ]
+    }
+  },
+  "fallback": {
+    "strategy": "ui_only",
+    "description": "Use UI-based highlighting when scene service unavailable"
+  }
+}

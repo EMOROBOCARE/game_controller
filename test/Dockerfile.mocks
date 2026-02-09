@@ -1,0 +1,56 @@
+# Dockerfile for Mock ROS2 Nodes
+#
+# Provides lightweight mock nodes that simulate external services:
+# - mock_decision_making: Simulates phase-based FSM
+# - mock_generic_ui: Simulates UpdateManifest service
+
+FROM ros:humble
+
+# Install Python dependencies
+RUN apt-get update && apt-get install -y \
+    python3-pip \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install ROS2 Python packages
+RUN apt-get update && apt-get install -y \
+    ros-humble-std-msgs \
+    ros-humble-rclpy \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install hri_actions_msgs (for Intent message type)
+RUN apt-get update && apt-get install -y \
+    git \
+    && rm -rf /var/lib/apt/lists/*
+
+# Create workspace
+WORKDIR /mock_ws
+
+# Clone and build hri_actions_msgs
+RUN mkdir -p /mock_ws/src && \
+    cd /mock_ws/src && \
+    git clone https://github.com/tu-darmstadt-ros-pkg/hri_actions.git || \
+    (echo "Using stub for hri_actions_msgs" && mkdir -p hri_actions_msgs)
+
+# Copy stub generic_ui_interfaces
+COPY test/stubs/generic_ui_interfaces /mock_ws/src/generic_ui_interfaces
+
+# Build the workspace
+RUN bash -c "source /opt/ros/humble/setup.bash && \
+    cd /mock_ws && \
+    colcon build --symlink-install"
+
+# Copy mock nodes
+COPY test/mocks /test_mocks
+
+# Setup entrypoint
+RUN echo '#!/bin/bash\n\
+set -e\n\
+source /opt/ros/humble/setup.bash\n\
+if [ -f /mock_ws/install/setup.bash ]; then\n\
+    source /mock_ws/install/setup.bash\n\
+fi\n\
+exec "$@"' > /ros_entrypoint.sh && \
+    chmod +x /ros_entrypoint.sh
+
+ENTRYPOINT ["/ros_entrypoint.sh"]
+CMD ["bash"]

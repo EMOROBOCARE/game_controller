@@ -1,0 +1,58 @@
+[
+  {
+    "label": "el agua",
+    "value": "el agua",
+    "image": "assets/location-agua.svg",
+    "difficulty": null,
+    "type": "lugar"
+  },
+  {
+    "label": "la carretera",
+    "value": "la carretera",
+    "image": "assets/location-carretera.svg",
+    "difficulty": null,
+    "type": "lugar"
+  },
+  {
+    "label": "el cielo",
+    "value": "el cielo",
+    "image": "assets/location-cielo.svg",
+    "difficulty": null,
+    "type": "lugar"
+  },
+  {
+    "label": "las vías",
+    "value": "las vías",
+    "image": "assets/location-vias.svg",
+    "difficulty": null,
+    "type": "lugar"
+  },
+  {
+    "label": "el parque",
+    "value": "el parque",
+    "image": "assets/location-parque.svg",
+    "difficulty": null,
+    "type": "lugar"
+  },
+  {
+    "label": "la casa",
+    "value": "la casa",
+    "image": "assets/location-casa.svg",
+    "difficulty": null,
+    "type": "lugar"
+  },
+  {
+    "label": "el campo",
+    "value": "el campo",
+    "image": "assets/location-campo.svg",
+    "difficulty": null,
+    "type": "lugar"
+  },
+  {
+    "label": "la ciudad",
+    "value": "la ciudad",
+    "image": "assets/location-ciudad.svg",
+    "difficulty": null,
+    "type": "lugar"
+  }
+]

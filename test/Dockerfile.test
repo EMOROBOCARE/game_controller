@@ -1,0 +1,51 @@
+# Dockerfile for running integration tests
+FROM ros:humble-ros-base
+
+ENV DEBIAN_FRONTEND=noninteractive
+
+# Install dependencies
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    python3-pip \
+    python3-colcon-common-extensions \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install Python test dependencies
+RUN pip3 install --no-cache-dir \
+    pytest \
+    pytest-asyncio \
+    pytest-timeout \
+    pydantic \
+    pyyaml
+
+# Create workspace
+WORKDIR /ros2_ws/src
+
+# Copy interfaces (default to stub if real package is unavailable)
+ARG GENERIC_UI_INTERFACES_PATH=game_controller/stub_generic_ui_interfaces
+COPY ${GENERIC_UI_INTERFACES_PATH} /ros2_ws/src/generic_ui_interfaces
+
+# Copy stub hri_actions_msgs for tests
+ARG HRI_ACTIONS_MSGS_PATH=game_controller/stub_hri_actions_msgs
+COPY ${HRI_ACTIONS_MSGS_PATH} /ros2_ws/src/hri_actions_msgs
+
+# Copy game_controller package (for unit tests)
+COPY game_controller /ros2_ws/src/game_controller
+
+# Build interfaces
+WORKDIR /ros2_ws
+RUN . /opt/ros/humble/setup.sh && \
+    colcon build --symlink-install
+
+# Copy tests
+COPY test/integration /tests
+
+# Create entrypoint
+RUN echo '#!/bin/bash\n\
+set -e\n\
+source /opt/ros/humble/setup.bash\n\
+source /ros2_ws/install/setup.bash\n\
+exec "$@"' > /entrypoint.sh && chmod +x /entrypoint.sh
+
+ENTRYPOINT ["/entrypoint.sh"]
+CMD ["python3", "-m", "pytest", "/tests", "-v"]

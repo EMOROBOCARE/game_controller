@@ -1,0 +1,102 @@
+# Headless integration harness for game_controller + decision_making + generic_ui backend
+#
+# Usage:
+#   docker compose -f docker-compose.gc_dm_integration.yml up --build --abort-on-container-exit
+#
+# Logs:
+#   docker compose -f docker-compose.gc_dm_integration.yml logs -f integration_runner
+#   (and JSONL artifacts under game_controller/test/results/)
+
+services:
+  decision_making:
+    build:
+      context: ../refactored_game/decision_making_ws
+      dockerfile: Dockerfile
+      network: host
+    environment:
+      ROS_DOMAIN_ID: "${ROS_DOMAIN_ID:-43}"
+    networks:
+      - rosnet_gc_dm
+    healthcheck:
+      test: ["CMD", "bash", "-c", "source /opt/ros/humble/setup.bash && ros2 node list | grep -q decision_making"]
+      interval: 5s
+      timeout: 5s
+      retries: 15
+      start_period: 10s
+
+  game_controller:
+    build:
+      context: ..
+      dockerfile: game_controller/game_controller/Dockerfile.compose
+      network: host
+    environment:
+      ROS_DOMAIN_ID: "${ROS_DOMAIN_ID:-43}"
+    volumes:
+      - ./game_controller/games:/ros2_ws/src/game_controller/games:ro
+    depends_on:
+      decision_making:
+        condition: service_healthy
+    networks:
+      - rosnet_gc_dm
+    healthcheck:
+      test: ["CMD", "bash", "-c", "source /opt/ros/humble/setup.bash && source /ros2_ws/install/setup.bash && ros2 node list | grep -q game_controller"]
+      interval: 5s
+      timeout: 5s
+      retries: 15
+      start_period: 10s
+
+  backend:
+    build:
+      context: ../generic_ui
+      dockerfile: backend/Dockerfile
+      network: host
+    environment:
+      ROS_DOMAIN_ID: "${ROS_DOMAIN_ID:-43}"
+      UI_GATEWAY_PORT: 8080
+      UI_SIMPLE_UI_DEMO: "0"
+      UI_MANIFEST_PATH: ""
+    depends_on:
+      decision_making:
+        condition: service_healthy
+    networks:
+      - rosnet_gc_dm
+    healthcheck:
+      test: ["CMD", "bash", "-lc", "source /opt/ros/humble/setup.bash && source /ros2_ws/install/setup.bash && ros2 service list | grep -q /generic_ui/get_manifest"]
+      interval: 5s
+      timeout: 5s
+      retries: 15
+      start_period: 10s
+
+  integration_runner:
+    build:
+      context: ..
+      dockerfile: game_controller/test/Dockerfile.gc_dm_integration
+      network: host
+    environment:
+      ROS_DOMAIN_ID: "${ROS_DOMAIN_ID:-43}"
+      TEST_TIMEOUT: 180
+      TEST_RESULTS_DIR: /test_results
+      MOCK_EXPRESSIVE_SAY_DELAY_SEC: "0.15"
+    depends_on:
+      game_controller:
+        condition: service_healthy
+      backend:
+        condition: service_healthy
+    volumes:
+      - ./test/results:/test_results
+    networks:
+      - rosnet_gc_dm
+    command:
+      - bash
+      - -lc
+      - |
+        set -e
+        python3 /tests/mock_expressive_say_server.py &
+        MOCK_TTS_PID=$!
+        trap "kill ${MOCK_TTS_PID} >/dev/null 2>&1 || true" EXIT
+        python3 /tests/run_gc_dm_manifest_integration.py
+        python3 /tests/analyze_gc_dm_logs.py --results-dir /test_results
+
+networks:
+  rosnet_gc_dm:
+    driver: bridge
