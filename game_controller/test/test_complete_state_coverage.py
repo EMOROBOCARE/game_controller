@@ -17,7 +17,7 @@ GAME_STATES = [
     "FAIL_L2",
     "CORRECT",
     "PHASE_COMPLETE",
-    "P6_HIGHLIGHT",
+    "P5_HIGHLIGHT",
 ]
 
 
@@ -97,7 +97,7 @@ def create_test_payload_for_state(state):
             "phase": "P1"
         }
 
-    elif state == "P6_HIGHLIGHT":
+    elif state == "P5_HIGHLIGHT":
         return {
             "highlighted_ids": ["2"],
             "options": [
@@ -139,8 +139,8 @@ def test_patch_paths_are_consistent():
 
     print(f"Instance indices used: {instance_indices}")
 
-    # Current implementation uses instance 0 (game_screen)
-    assert "0" in instance_indices, "Should patch instance 0 (game_screen)"
+    # Current implementation uses instance 0 (main game view)
+    assert "0" in instance_indices, "Should patch instance 0 (main game view)"
 
     print("✓ All patch paths are consistent")
 

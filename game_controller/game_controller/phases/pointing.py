@@ -1,16 +1,17 @@
-"""Pointing phase handler (P6)."""
+"""Pointing phase handler (P5)."""
 
 from __future__ import annotations
 
 from typing import Any, Optional, Tuple
 
+from ..models.phase import Modality
 from ..models.game import Question
 from ..models.option import Option
 from .base import BasePhaseHandler
 
 
 class PointingPhaseHandler(BasePhaseHandler):
-    """Handler for P6 Pointing phase.
+    """Handler for P5 Pointing phase.
 
     Child asks "where is X?" among options.
     No correct answer - robot highlights what child says
@@ -18,6 +19,10 @@ class PointingPhaseHandler(BasePhaseHandler):
 
     On timeout, skips to next phase.
     """
+
+    @property
+    def modality(self) -> Modality:
+        return Modality.POINTING
 
     def __init__(self, config: Any) -> None:
         super().__init__(config)

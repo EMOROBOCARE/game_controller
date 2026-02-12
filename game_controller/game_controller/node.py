@@ -10,13 +10,16 @@ Main ROS2 node that orchestrates the Colors (Colores) game by:
 
 from __future__ import annotations
 
+import copy
 import json
+import time
 from typing import Any, Dict, List, Optional
 
 import rclpy
 from rclpy.node import Node
 from rclpy.callback_groups import ReentrantCallbackGroup
 from rclpy.executors import MultiThreadedExecutor
+from rclpy.qos import QoSDurabilityPolicy, QoSHistoryPolicy, QoSProfile, QoSReliabilityPolicy
 from std_msgs.msg import String, Int16
 from hri_actions_msgs.msg import Intent
 
@@ -33,16 +36,18 @@ from .content.loaders import load_game_content
 from .content.loaders import get_all_games_metadata
 from .content.builder import build_game_init_payload
 from .ui.manifest_builder import (
+    CONTROLS_PAUSED,
+    CONTROLS_PLAYING,
     DEFAULT_GAME_SCREEN_INDEX,
     GAME_SCREEN_INSTANCE_ID,
+    build_controls_patch,
+    build_game_screen_mode_patches,
+    build_game_screen_pause_patch,
+    build_selector_config,
     build_initial_manifest,
+    build_input_disabled_patch,
     build_state_based_patches,
-    build_game_screen_controls_patch,
-    build_game_screen_input_disabled_patch,
-    build_game_screen_mode_patch,
-    build_game_screen_options_patch,
     build_game_screen_phase_patch,
-    build_game_screen_question_patch,
     build_game_screen_state_patch,
     get_instance_index,
 )
@@ -55,6 +60,7 @@ class GameControllerNode(Node):
     Subscribes to:
         - /decision/state: Track game state from decision_making
         - /intents: User input and control commands (via communication_hub)
+        - /ui/input: Direct UI events fallback (when communication_hub is absent)
         - /game/game_selector: Game selection
         - /game/user_selector: User selection
         
@@ -78,7 +84,7 @@ class GameControllerNode(Node):
         # State tracking
         self._active_session_id: Optional[int] = None
         self._latest_transaction_id: Optional[int] = 0
-        self._current_game_state: Optional[str] = None
+        self._current_system_state: str = "IDLE"
         self._current_question_cache: Dict[int, Dict[str, Any]] = {}
         self._current_round_id: Optional[int] = None
         self._current_phase: Optional[str] = None
@@ -99,10 +105,12 @@ class GameControllerNode(Node):
         self._ui_screen: str = "menu"
         self._ui_paused: bool = False
         self._game_screen_index: int = DEFAULT_GAME_SCREEN_INDEX
+        self._manifest_seed_in_flight: bool = False
         
         # Loaded game content
         self._game_content_cache: Dict[str, Dict[str, Any]] = {}
         self._games_metadata: List[Dict[str, Any]] = get_all_games_metadata()
+        self._game_screen_config_cache: Dict[str, Any] = build_selector_config(games=self._games_metadata)
 
         # Helpers to infer phase even when decision_making payloads omit it.
         self._round_id_to_phase: Dict[int, str] = {}
@@ -110,6 +118,10 @@ class GameControllerNode(Node):
         
         # UI input translator
         self._ui_translator = InputTranslator()
+        self._ui_input_bridge_enabled = bool(self.get_parameter("input_bridge.enabled").value)
+        dedupe_window = float(self.get_parameter("input_bridge.dedupe_window_sec").value or 0.0)
+        self._input_dedupe_window_sec = max(0.0, dedupe_window)
+        self._recent_input_fingerprints: Dict[str, float] = {}
         
         # Auto-advance scheduler
         auto_config = AutoAdvanceConfig.from_dict(
@@ -164,6 +176,15 @@ class GameControllerNode(Node):
             timeout_sec=self.get_parameter("generic_ui.manifest_timeout_sec").value,
             callback_group=self._cb_group,
         )
+
+        # Track manifest service availability transitions so backend restarts can
+        # be recovered by re-sending a full manifest.
+        self._manifest_service_available: bool = False
+        self.create_timer(
+            1.0,
+            self._monitor_manifest_service,
+            callback_group=self._cb_group,
+        )
         
         # Send initial manifest after short delay
         self.create_timer(
@@ -179,10 +200,13 @@ class GameControllerNode(Node):
         # Topic parameters
         self.declare_parameter("topics.decision_state", "/decision/state")
         self.declare_parameter("topics.intents", "/intents")
+        self.declare_parameter("topics.ui_input", "/ui/input")
         self.declare_parameter("topics.game_selector", "/game/game_selector")
         self.declare_parameter("topics.user_selector", "/game/user_selector")
         self.declare_parameter("topics.decision_events", "/decision/events")
         self.declare_parameter("topics.current_user", "/game/current_user")
+        self.declare_parameter("input_bridge.enabled", True)
+        self.declare_parameter("input_bridge.dedupe_window_sec", 0.35)
         
         # Generic UI parameters
         self.declare_parameter("generic_ui.update_manifest_service", "/generic_ui/update_manifest")
@@ -198,7 +222,7 @@ class GameControllerNode(Node):
         self.declare_parameter("auto_advance.phase_complete", 0.3)
 
         # Expressive TTS (EmorobCare communication_hub action interface).
-        self.declare_parameter("tts.enabled", True)
+        self.declare_parameter("tts.enabled", False)
         self.declare_parameter("tts.action_server", "/expressive_say")
         self.declare_parameter("tts.language", "es")
         self.declare_parameter("tts.server_wait_timeout_sec", 0.2)
@@ -234,12 +258,18 @@ class GameControllerNode(Node):
     
     def _setup_subscribers(self) -> None:
         """Setup ROS subscribers."""
-        # Decision state subscriber
+        # Decision state subscriber (match TRANSIENT_LOCAL QoS used by decision_making publisher)
+        state_qos = QoSProfile(
+            history=QoSHistoryPolicy.KEEP_LAST,
+            depth=1,
+            reliability=QoSReliabilityPolicy.RELIABLE,
+            durability=QoSDurabilityPolicy.TRANSIENT_LOCAL,
+        )
         self._state_sub = self.create_subscription(
             String,
             self.get_parameter("topics.decision_state").value,
             self._on_decision_state,
-            10,
+            state_qos,
         )
         
         # Intents subscriber
@@ -249,6 +279,16 @@ class GameControllerNode(Node):
             self._on_intent,
             10,
         )
+
+        # Optional direct UI input subscriber for WebUI flows without communication_hub.
+        self._ui_input_sub = None
+        if self._ui_input_bridge_enabled:
+            self._ui_input_sub = self.create_subscription(
+                String,
+                self.get_parameter("topics.ui_input").value,
+                self._on_ui_input,
+                10,
+            )
         
         # Game selector subscriber
         self._game_selector_sub = self.create_subscription(
@@ -266,25 +306,28 @@ class GameControllerNode(Node):
             10,
         )
     
-    def _send_initial_manifest(self) -> None:
+    def _send_initial_manifest(self, force: bool = False) -> None:
         """Send initial manifest to generic_ui."""
-        if hasattr(self, "_manifest_sent") and self._manifest_sent:
+        if not force and getattr(self, "_manifest_sent", False):
+            return
+        if self._manifest_seed_in_flight:
             return
 
         manifest = build_initial_manifest(games=self._games_metadata)
-        self._game_screen_index = get_instance_index(
-            manifest.get("instances", []),
-            GAME_SCREEN_INSTANCE_ID,
-            DEFAULT_GAME_SCREEN_INDEX,
-        )
+        self._refresh_instance_indices(manifest)
+        self._sync_game_screen_config_cache(manifest)
         
         def on_response(success: bool, message: str, hash_: str) -> None:
+            self._manifest_seed_in_flight = False
             if success:
+                self._manifest_sent = True
                 self.get_logger().info(f"Initial manifest sent. Hash: {hash_}")
             else:
+                self._manifest_sent = False
                 self.get_logger().error(f"Failed to send manifest: {message}")
         
         if self._manifest_client.set_manifest(manifest, on_response):
+            self._manifest_seed_in_flight = True
             self._manifest_sent = True
     
     def _publish_event(self, event: Dict[str, Any]) -> None:
@@ -304,6 +347,9 @@ class GameControllerNode(Node):
     
     def _on_decision_state(self, msg: String) -> None:
         """Handle state updates from decision_making."""
+        if not getattr(self, "_manifest_sent", False):
+            self._send_initial_manifest()
+
         state_data = parse_decision_state(msg.data)
         if state_data is None:
             self.get_logger().warn("Failed to parse decision state")
@@ -315,8 +361,8 @@ class GameControllerNode(Node):
         session_id = state_data.get("sessionId")
         payload = state_data.get("payload", {})
 
-        self._update_ui_mode(system_state)
-        self._update_pause_controls(system_state)
+        mode_patches = self._update_ui_mode(system_state)
+        pause_patches = self._update_pause_controls(system_state)
 
         system_state_upper = str(system_state or "").upper().strip()
         ui_game_state = game_state
@@ -327,7 +373,7 @@ class GameControllerNode(Node):
 
         # Update state tracking
         self._latest_transaction_id = transaction_id
-        self._current_game_state = game_state
+        self._current_system_state = system_state_upper or "IDLE"
         
         if session_id is not None:
             self._active_session_id = session_id
@@ -339,6 +385,7 @@ class GameControllerNode(Node):
             self._current_question_cache.clear()
             self._round_id_to_phase.clear()
             self._question_id_to_phase.clear()
+            self._recent_input_fingerprints.clear()
             self._start_requested = False
             if self._speech_gate is not None:
                 self._speech_gate.reset()
@@ -373,7 +420,7 @@ class GameControllerNode(Node):
                 self._current_phase = self._round_id_to_phase[self._current_round_id]
 
         # Always patch the embedded state snapshot for the UI screen (and keep phase visible).
-        patches = [
+        state_patches: List[Dict[str, Any]] = [
             build_game_screen_state_patch(
                 str(system_state or ""),
                 str(ui_game_state) if ui_game_state is not None else None,
@@ -386,7 +433,6 @@ class GameControllerNode(Node):
                 instance_index=self._game_screen_index,
             ),
         ]
-        self._manifest_client.patch_manifest(patches)
         
         self.get_logger().info(
             f"State update: {game_state} (tx={transaction_id})"
@@ -405,7 +451,11 @@ class GameControllerNode(Node):
             ):
                 question_payload = payload.get("question")
                 question_dict = question_payload if isinstance(question_payload, dict) else {}
-                prompt = str(question_dict.get("prompt") or "").strip()
+                prompt = str(
+                    question_dict.get("promptVerbal")
+                    or question_dict.get("prompt")
+                    or ""
+                ).strip()
                 if prompt:
                     handled = self._speech_gate.maybe_speak(
                         SpeechRequest(
@@ -418,8 +468,53 @@ class GameControllerNode(Node):
             if not handled:
                 self._auto_scheduler.schedule_if_needed(game_state, transaction_id)
         
-        # Patch UI based on state
-        self._patch_ui_for_state(game_state, payload)
+        # Patch UI based on state.
+        state_based_patches = self._patch_ui_for_state(game_state, payload)
+        all_patches = mode_patches + pause_patches + state_patches + state_based_patches
+        self._apply_game_screen_config_patches(all_patches)
+        if all_patches:
+            self._manifest_client.patch_manifest(
+                all_patches,
+                self._on_manifest_patch_response,
+            )
+
+    def _monitor_manifest_service(self) -> None:
+        """Watch service availability and re-seed manifest after backend restarts."""
+        if not self._manifest_client.available:
+            self._manifest_service_available = False
+            self._manifest_sent = False
+            return
+
+        service_available = self._manifest_client.wait_for_service(timeout_sec=0.0)
+        if service_available and not self._manifest_service_available:
+            if not self._manifest_sent:
+                self.get_logger().info(
+                    "Manifest service became available; re-sending initial manifest"
+                )
+                self._send_initial_manifest(force=True)
+        elif not service_available and self._manifest_service_available:
+            self.get_logger().warn(
+                "Manifest service became unavailable; waiting for backend recovery"
+            )
+            self._manifest_sent = False
+            self._manifest_seed_in_flight = False
+
+        self._manifest_service_available = service_available
+
+    def _on_manifest_patch_response(
+        self,
+        success: bool,
+        message: str,
+        _manifest_hash: str,
+    ) -> None:
+        """Recover from patch failures by re-sending a full manifest."""
+        if success:
+            return
+        self.get_logger().warn(
+            f"Manifest patch failed: {message}. Re-sending full manifest."
+        )
+        self._manifest_sent = False
+        self._send_initial_manifest(force=True)
     
     def _on_intent(self, msg: Intent) -> None:
         """Handle input from /intents topic."""
@@ -428,9 +523,37 @@ class GameControllerNode(Node):
             self.get_logger().warn("Failed to parse /intents data")
             return
 
-        self.get_logger().info(f"Intent input: {input_data}")
-
         modality = self._map_intent_modality(msg.modality)
+        self._handle_ui_like_input(
+            input_data=input_data,
+            modality=modality,
+            source="/intents",
+        )
+
+    def _on_ui_input(self, msg: String) -> None:
+        """Handle direct input from /ui/input for WebUI-only debugging stacks."""
+        input_data = self._parse_ui_input_data(msg.data)
+        if input_data is None:
+            self.get_logger().warn("Failed to parse /ui/input data")
+            return
+        self._handle_ui_like_input(
+            input_data=input_data,
+            modality="touch",
+            source="/ui/input",
+        )
+
+    def _handle_ui_like_input(
+        self,
+        input_data: Dict[str, Any],
+        modality: str,
+        source: str,
+    ) -> None:
+        """Translate normalized input data to decision events."""
+        if self._is_duplicate_input(input_data, modality):
+            self.get_logger().debug(f"Ignored duplicate input from {source}: {input_data}")
+            return
+
+        self.get_logger().info(f"Input from {source}: {input_data}")
         event = self._ui_translator.translate_input_data(
             input_data,
             modality=modality,
@@ -439,8 +562,34 @@ class GameControllerNode(Node):
             # Mark transaction as completed externally
             if self._latest_transaction_id:
                 self._auto_scheduler.mark_completed(self._latest_transaction_id)
-
             self._publish_event(event)
+
+    def _is_duplicate_input(self, input_data: Dict[str, Any], modality: str) -> bool:
+        """Best-effort de-duplication across /ui/input and /intents sources."""
+        if self._input_dedupe_window_sec <= 0.0:
+            return False
+
+        try:
+            payload_key = json.dumps(input_data, ensure_ascii=False, sort_keys=True)
+        except (TypeError, ValueError):
+            payload_key = str(input_data)
+        key = f"{modality}:{payload_key}"
+        now = time.monotonic()
+
+        # Prune stale keys.
+        stale_keys = [
+            old_key
+            for old_key, ts in self._recent_input_fingerprints.items()
+            if now - ts > self._input_dedupe_window_sec
+        ]
+        for old_key in stale_keys:
+            self._recent_input_fingerprints.pop(old_key, None)
+
+        previous_ts = self._recent_input_fingerprints.get(key)
+        self._recent_input_fingerprints[key] = now
+        if previous_ts is None:
+            return False
+        return (now - previous_ts) <= self._input_dedupe_window_sec
 
     def _parse_intent_input_data(self, msg: Intent) -> Optional[Dict[str, Any]]:
         """Extract ui-like input data from an Intent message."""
@@ -459,13 +608,69 @@ class GameControllerNode(Node):
             raw_input = data["input"]
             parsed = parse_input_json(raw_input)
             if parsed is not None:
-                return parsed
+                return self._normalize_input_data(parsed)
             return {"label": raw_input}
 
         if any(key in data for key in ("label", "value", "answer")):
-            return data
+            return self._normalize_input_data(data)
 
         return None
+
+    def _parse_ui_input_data(self, raw: str) -> Optional[Dict[str, Any]]:
+        """Extract ui-like input data from a /ui/input String payload."""
+        parsed = parse_input_json(raw)
+        if parsed is not None:
+            return self._normalize_input_data(parsed)
+        label = str(raw or "").strip()
+        if not label:
+            return None
+        return {"label": label}
+
+    def _normalize_input_data(self, data: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+        """Normalize nested UI payload variants into translator-friendly dicts."""
+        if not isinstance(data, dict):
+            return None
+
+        normalized: Dict[str, Any] = dict(data)
+
+        # Unwrap common nested payload wrappers from generic_ui events.
+        for _ in range(3):
+            candidate: Optional[Dict[str, Any]] = None
+            raw_input = normalized.get("input")
+            raw_data = normalized.get("data")
+            if isinstance(raw_input, str):
+                candidate = parse_input_json(raw_input)
+            elif isinstance(raw_data, str):
+                candidate = parse_input_json(raw_data)
+            if isinstance(candidate, dict):
+                normalized = dict(candidate)
+                continue
+            break
+
+        # Flatten nested answer object emitted by ButtonAnswer.
+        nested_answer = normalized.get("answer")
+        if isinstance(nested_answer, dict):
+            if "label" not in normalized:
+                raw_label = (
+                    nested_answer.get("label")
+                    or nested_answer.get("value")
+                    or nested_answer.get("id")
+                    or nested_answer.get("text")
+                )
+                if raw_label is not None:
+                    normalized["label"] = raw_label
+            if "value" not in normalized and normalized.get("label") is not None:
+                normalized["value"] = normalized.get("label")
+            if "correct" not in normalized and "correct" in nested_answer:
+                normalized["correct"] = nested_answer.get("correct")
+
+        # Treat plain event text as label when structured fields are missing.
+        if not any(key in normalized for key in ("label", "value", "answer", "correct")):
+            text = normalized.get("text")
+            if isinstance(text, str) and text.strip():
+                normalized["label"] = text.strip()
+
+        return normalized if normalized else None
 
     def _map_intent_modality(self, modality: str) -> str:
         """Map Intent modality to game_controller input type strings."""
@@ -575,7 +780,7 @@ class GameControllerNode(Node):
             return
         
         # Don't start if already in a session
-        if self._active_session_id is not None and self._current_game_state not in (None, "IDLE"):
+        if self._active_session_id is not None and self._current_system_state != "IDLE":
             self.get_logger().info("Session already active, ignoring start request")
             return
         
@@ -660,7 +865,7 @@ class GameControllerNode(Node):
         self,
         game_state: Optional[str],
         payload: Dict[str, Any],
-    ) -> None:
+    ) -> List[Dict[str, Any]]:
         """Patch UI manifest based on game state.
         
         Args:
@@ -668,16 +873,53 @@ class GameControllerNode(Node):
             payload: State payload
         """
         if not game_state:
-            return
-        
-        patches = build_state_based_patches(
+            return []
+
+        payload_for_ui: Dict[str, Any] = dict(payload) if isinstance(payload, dict) else {}
+        # decision_making QUESTION_PRESENT payloads may omit `phase`; inject the
+        # latest known phase so UI answer type selection can stay phase-aware.
+        if self._current_phase and not payload_for_ui.get("phase"):
+            payload_for_ui["phase"] = self._current_phase
+
+        return build_state_based_patches(
             game_state,
-            payload,
+            payload_for_ui,
             instance_index=self._game_screen_index,
         )
-        
-        if patches:
-            self._manifest_client.patch_manifest(patches)
+
+    def _refresh_instance_indices(self, manifest: Dict[str, Any]) -> None:
+        instances = manifest.get("instances") if isinstance(manifest.get("instances"), list) else []
+        self._game_screen_index = get_instance_index(
+            instances,
+            GAME_SCREEN_INSTANCE_ID,
+            DEFAULT_GAME_SCREEN_INDEX,
+        )
+
+    def _sync_game_screen_config_cache(self, manifest: Dict[str, Any]) -> None:
+        instances = manifest.get("instances") if isinstance(manifest.get("instances"), list) else []
+        if 0 <= self._game_screen_index < len(instances):
+            inst = instances[self._game_screen_index]
+            if isinstance(inst, dict) and isinstance(inst.get("config"), dict):
+                self._game_screen_config_cache = copy.deepcopy(inst["config"])
+
+    def _apply_game_screen_config_patches(self, patches: List[Dict[str, Any]]) -> None:
+        root_path = f"/instances/{self._game_screen_index}/config"
+        field_prefix = f"{root_path}/"
+        for patch in patches:
+            if str(patch.get("op") or "").lower() != "replace":
+                continue
+            path = str(patch.get("path") or "")
+            if path == root_path:
+                val = patch.get("value")
+                if isinstance(val, dict):
+                    self._game_screen_config_cache = copy.deepcopy(val)
+                continue
+            if not path.startswith(field_prefix):
+                continue
+            field = path[len(field_prefix) :]
+            if "/" in field or not field:
+                continue
+            self._game_screen_config_cache[field] = copy.deepcopy(patch.get("value"))
 
     def _try_parse_json(self, raw: str) -> Optional[Any]:
         """Try to parse a JSON string, returning None on failure."""
@@ -686,103 +928,41 @@ class GameControllerNode(Node):
         except (json.JSONDecodeError, TypeError):
             return None
 
-    def _update_ui_mode(self, system_state: Any) -> None:
-        """Swap the GameScreenComponent between menu/game modes."""
+    def _update_ui_mode(self, system_state: Any) -> List[Dict[str, Any]]:
+        """Swap `game_screen` component based on system state."""
         state_upper = str(system_state or "").upper().strip()
         target = "menu" if state_upper == "IDLE" else "game"
         if target == self._ui_screen:
-            return
+            return []
 
-        patches: List[Dict[str, Any]] = [
-            build_game_screen_mode_patch(target, instance_index=self._game_screen_index)
-        ]
-
-        # When returning to menu, clear any stale question/options so the manifest is coherent
-        # even if the UI keeps the component mounted.
-        if target == "menu":
-            patches.extend(
-                [
-                    build_game_screen_question_patch(
-                        "",
-                        [],
-                        question_id=0,
-                        question_type="",
-                        instance_index=self._game_screen_index,
-                    ),
-                    build_game_screen_options_patch(
-                        [],
-                        disabled=True,
-                        instance_index=self._game_screen_index,
-                    ),
-                    build_game_screen_controls_patch(
-                        show_pause=False,
-                        show_resume=False,
-                        show_stop=False,
-                        show_reset=False,
-                        show_skip_phase=False,
-                        instance_index=self._game_screen_index,
-                    ),
-                    build_game_screen_phase_patch("", instance_index=self._game_screen_index),
-                    build_game_screen_input_disabled_patch(False, instance_index=self._game_screen_index),
-                ]
-            )
-        else:
-            patches.extend(
-                [
-                    build_game_screen_controls_patch(
-                        show_pause=True,
-                        show_resume=False,
-                        show_stop=True,
-                        show_reset=True,
-                        show_skip_phase=True,
-                        instance_index=self._game_screen_index,
-                    ),
-                ]
-            )
-
-        self._manifest_client.patch_manifest(patches)
         self._ui_screen = target
+        if target == "menu":
+            self._ui_paused = False
+        return build_game_screen_mode_patches(
+            target,
+            games=self._games_metadata,
+            instance_index=self._game_screen_index,
+        )
 
-    def _update_pause_controls(self, system_state: Any) -> None:
-        """Toggle pause/resume controls based on decision_making system state."""
+    def _update_pause_controls(self, system_state: Any) -> List[Dict[str, Any]]:
+        """Toggle pause state based on decision_making system state."""
         state_upper = str(system_state or "").upper().strip()
         if state_upper == "IDLE":
-            # Menu state is handled by _update_ui_mode; never override menu controls from here.
+            # Menu state is handled by _update_ui_mode.
             self._ui_paused = False
-            return
+            return []
 
         paused = state_upper == "PAUSED"
         if paused == self._ui_paused:
-            return
+            return []
 
-        patches: List[Dict[str, Any]] = []
-        if paused:
-            patches.append(
-                build_game_screen_controls_patch(
-                    show_pause=False,
-                    show_resume=True,
-                    show_stop=True,
-                    show_reset=True,
-                    show_skip_phase=True,
-                    instance_index=self._game_screen_index,
-                )
-            )
-            # decision_making does not accept answers while paused.
-            patches.append(build_game_screen_input_disabled_patch(True, instance_index=self._game_screen_index))
-        else:
-            patches.append(
-                build_game_screen_controls_patch(
-                    show_pause=True,
-                    show_resume=False,
-                    show_stop=True,
-                    show_reset=True,
-                    show_skip_phase=True,
-                    instance_index=self._game_screen_index,
-                )
-            )
-
-        self._manifest_client.patch_manifest(patches)
+        controls = CONTROLS_PAUSED if paused else CONTROLS_PLAYING
         self._ui_paused = paused
+        return [
+            build_game_screen_pause_patch(paused, instance_index=self._game_screen_index),
+            build_controls_patch(controls, instance_index=self._game_screen_index),
+            build_input_disabled_patch(paused, instance_index=self._game_screen_index),
+        ]
 
 
 def main(args: Optional[List[str]] = None) -> None:

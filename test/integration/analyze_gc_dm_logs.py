@@ -90,13 +90,13 @@ class StepSummary:
     system_state: str
     game_state: str
     manifest_hash: str
+    component: str
     mode: str
     phase: str
-    question_type: str
+    answer_type: str
     question_text: str
-    options_count: int
-    input_disabled: Optional[bool]
-    controls: Dict[str, Any]
+    items_count: int
+    pause: Optional[bool]
 
 
 def _extract_step_summary(rec: Dict[str, Any]) -> Tuple[Optional[StepSummary], List[Dict[str, str]]]:
@@ -132,45 +132,50 @@ def _extract_step_summary(rec: Dict[str, Any]) -> Tuple[Optional[StepSummary], L
         )
         return None, anomalies
 
+    component = str(game_screen.get("component") or "")
     cfg = _as_dict(game_screen.get("config"))
-    mode = str(cfg.get("mode") or "")
+    if component not in {"GameSelector", "GameComponent"}:
+        anomalies.append(
+            {"where": step or "<unknown>", "reason": f"game_screen.component must be GameSelector/GameComponent (got {component})"}
+        )
+
+    mode = "menu" if component == "GameSelector" else "game" if component == "GameComponent" else ""
     phase = str(cfg.get("phase") or "")
     question = _as_dict(cfg.get("question"))
-    question_type = str(question.get("questionType") or "")
     question_text = str(question.get("text") or "")
-    options = [o for o in _as_list(cfg.get("options")) if isinstance(o, dict)]
-    input_disabled_raw = cfg.get("inputDisabled")
-    input_disabled = bool(input_disabled_raw) if input_disabled_raw is not None else None
-    controls = _as_dict(cfg.get("controls"))
+    answer_type = str(cfg.get("answerType") or "")
+    items = [o for o in _as_list(cfg.get("items")) if isinstance(o, dict)]
+    pause_raw = cfg.get("pause")
+    pause = bool(pause_raw) if pause_raw is not None else None
 
-    required_controls = ("showPause", "showResume", "showStop", "showReset", "showSkipPhase")
-    if not all(k in controls for k in required_controls):
-        anomalies.append({"where": step or "<unknown>", "reason": "game_screen.config.controls missing keys"})
-    else:
-        for k in required_controls:
-            if not isinstance(controls.get(k), bool):
-                anomalies.append({"where": step or "<unknown>", "reason": f"controls.{k} is not boolean"})
+    if component == "GameSelector":
+        if not isinstance(cfg.get("games"), list):
+            anomalies.append({"where": step or "<unknown>", "reason": "GameSelector config.games missing/invalid"})
+        if not str(cfg.get("startGameOpId") or "").strip():
+            anomalies.append({"where": step or "<unknown>", "reason": "GameSelector config.startGameOpId missing"})
 
-    if mode == "menu":
-        if input_disabled is not False:
-            anomalies.append({"where": step or "<unknown>", "reason": "menu should have inputDisabled=false"})
-        if any(controls.get(k) is True for k in required_controls if k in controls):
-            anomalies.append({"where": step or "<unknown>", "reason": "menu should hide all controls"})
+    if component == "GameComponent":
+        if not str(cfg.get("answerOpId") or "").strip():
+            anomalies.append({"where": step or "<unknown>", "reason": "GameComponent config.answerOpId missing"})
+        if answer_type not in {"none", "button", "match"}:
+            anomalies.append({"where": step or "<unknown>", "reason": f"GameComponent invalid answerType '{answer_type}'"})
+        if not isinstance(cfg.get("items"), list):
+            anomalies.append({"where": step or "<unknown>", "reason": "GameComponent config.items missing/invalid"})
 
-    if mode == "game":
-        if controls.get("showStop") is not True:
-            anomalies.append({"where": step or "<unknown>", "reason": "game should showStop=true"})
-        if controls.get("showReset") is not True:
-            anomalies.append({"where": step or "<unknown>", "reason": "game should showReset=true"})
-        if controls.get("showSkipPhase") is not True:
-            anomalies.append({"where": step or "<unknown>", "reason": "game should showSkipPhase=true"})
-        if question_type and not question_text.strip():
-            anomalies.append(
-                {
-                    "where": step or "<unknown>",
-                    "reason": f"empty question.text in game mode (questionType={question_type})",
-                }
-            )
+    if system_state.upper() == "IDLE" and component != "GameSelector":
+        anomalies.append({"where": step or "<unknown>", "reason": "IDLE should render GameSelector"})
+
+    if system_state.upper() in {"GAME", "PAUSED"} and component != "GameComponent":
+        anomalies.append({"where": step or "<unknown>", "reason": f"{system_state} should render GameComponent"})
+
+    if mode == "game" and game_state.upper() in {"PHASE_INTRO", "QUESTION_PRESENT", "FAIL_L1", "FAIL_L2", "CORRECT", "PHASE_COMPLETE"}:
+        if not question_text.strip():
+            anomalies.append({"where": step or "<unknown>", "reason": "game mode should include non-empty question.text"})
+
+    if system_state.upper() == "PAUSED" and pause is not True:
+        anomalies.append({"where": step or "<unknown>", "reason": "PAUSED state should set pause=true"})
+    if system_state.upper() == "GAME" and pause is True:
+        anomalies.append({"where": step or "<unknown>", "reason": "GAME state should set pause=false"})
 
     return (
         StepSummary(
@@ -179,13 +184,13 @@ def _extract_step_summary(rec: Dict[str, Any]) -> Tuple[Optional[StepSummary], L
             system_state=system_state,
             game_state=game_state,
             manifest_hash=manifest_hash,
+            component=component,
             mode=mode,
             phase=phase,
-            question_type=question_type,
+            answer_type=answer_type,
             question_text=_truncate(question_text, 96),
-            options_count=len(options),
-            input_disabled=input_disabled,
-            controls={k: controls.get(k) for k in required_controls if k in controls},
+            items_count=len(items),
+            pause=pause,
         ),
         anomalies,
     )
@@ -273,13 +278,13 @@ def main() -> int:
                 "systemState": s.system_state,
                 "gameState": s.game_state,
                 "hash": s.manifest_hash,
+                "component": s.component,
                 "mode": s.mode,
                 "phase": s.phase,
-                "questionType": s.question_type,
+                "answerType": s.answer_type,
                 "questionText": s.question_text,
-                "optionsCount": s.options_count,
-                "inputDisabled": s.input_disabled,
-                "controls": s.controls,
+                "itemsCount": s.items_count,
+                "pause": s.pause,
             }
             for s in step_summaries
         ],
@@ -299,8 +304,8 @@ def main() -> int:
 
     md.append("## Timeline (by step)")
     md.append("")
-    md.append("| step | system | gameState | mode | phase | qType | options | inputDisabled | controls | qText |")
-    md.append("|---|---|---|---|---|---|---:|---|---|---|")
+    md.append("| step | system | gameState | component | mode | phase | answerType | items | pause | qText |")
+    md.append("|---|---|---|---|---|---|---|---:|---|---|")
     for s in step_summaries:
         md.append(
             "| "
@@ -309,12 +314,12 @@ def main() -> int:
                     s.step,
                     s.system_state,
                     s.game_state,
+                    s.component,
                     s.mode,
                     s.phase,
-                    s.question_type,
-                    str(s.options_count),
-                    str(s.input_disabled),
-                    _truncate(json.dumps(s.controls, ensure_ascii=False), 48),
+                    s.answer_type,
+                    str(s.items_count),
+                    str(s.pause),
                     _truncate(s.question_text, 48),
                 ]
             )
@@ -361,4 +366,3 @@ def main() -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
-

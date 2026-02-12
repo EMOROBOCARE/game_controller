@@ -1,28 +1,28 @@
 [
     {
-        "label": "red",
-        "value": "red",
+        "label": "rojo",
+        "value": "rojo",
         "image": "red_circle",
         "difficulty": null,
         "type": "colour"
     },
     {
-        "label": "blue",
-        "value": "blue",
+        "label": "azul",
+        "value": "azul",
         "image": "blue_circle",
         "difficulty": 1,
         "type": "colour"
     },
     {
-        "label": "green",
-        "value": "green",
+        "label": "verde",
+        "value": "verde",
         "image": "green_circle",
         "difficulty": 2,
         "type": "colour"
     },
     {
-        "label": "yellow",
-        "value": "yellow",
+        "label": "amarillo",
+        "value": "amarillo",
         "image": "yellow_circle",
         "difficulty": 3,
         "type": "colour"

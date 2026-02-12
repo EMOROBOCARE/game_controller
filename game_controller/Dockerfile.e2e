@@ -8,6 +8,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     python3-pip \
     python3-colcon-common-extensions \
     docker.io \
+    docker-compose \
+    && (apt-get install -y --no-install-recommends docker-compose-plugin || true) \
     && rm -rf /var/lib/apt/lists/*
 
 # Install Python test dependencies

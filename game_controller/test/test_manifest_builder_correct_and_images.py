@@ -29,6 +29,7 @@ def test_format_options_excludes_correct_failure_case():
 
 def test_question_present_multi_image_edge_case(monkeypatch):
     monkeypatch.setenv("ASSET_CDN_URL", "http://cdn.test/base")
+    monkeypatch.setenv("SHARED_ASSET_BASE_URL", "http://cdn.shared/common")
 
     payload = {
         "question": {
@@ -49,6 +50,6 @@ def test_question_present_multi_image_edge_case(monkeypatch):
 
     assert question_patch["value"]["imgs"] == [
         "http://cdn.test/base/images/a.png",
-        "images/b.png",
+        "http://cdn.shared/common/images/b.png",
         "http://cdn.test/base/images/c.png",
     ]

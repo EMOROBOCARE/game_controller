@@ -1,17 +1,18 @@
-"""Unified Yes/No phase handler (P4_YESNO)."""
+"""Unified Yes/No phase handler (P4)."""
 
 from __future__ import annotations
 
 import random
 from typing import Any, Optional, Tuple
 
+from ..models.phase import Modality
 from ..models.game import Question
 from ..models.option import Option
 from .base import BasePhaseHandler
 
 
 class UnifiedYesNoHandler(BasePhaseHandler):
-    """Handler for unified P4+P5 Yes/No phase.
+    """Handler for P4 Yes/No phase.
 
     This phase:
     1. Samples one correct and one incorrect answer randomly
@@ -20,6 +21,10 @@ class UnifiedYesNoHandler(BasePhaseHandler):
 
     Counts as 1 round with 2 internal sub-rounds.
     """
+
+    @property
+    def modality(self) -> Modality:
+        return Modality.BUTTON
 
     def __init__(self, config: Any) -> None:
         super().__init__(config)

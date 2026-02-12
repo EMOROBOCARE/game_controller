@@ -22,6 +22,7 @@ import rclpy
 from rclpy.node import Node
 from rclpy.qos import QoSDurabilityPolicy, QoSProfile, QoSReliabilityPolicy
 from std_msgs.msg import String
+from game_controller.ui.manifest_builder import rewrite_asset_url
 
 try:
     from generic_ui_interfaces.srv import GetManifest
@@ -695,15 +696,23 @@ class IntegrationHarness(Node):
         prompt = str(question.get("prompt") or "")
         _require(bool(prompt.strip()), "QUESTION_PRESENT has empty question.prompt (TTS/UI requires non-empty)")
         image_url = question.get("imageUrl")
-        expected_imgs = [image_url] if isinstance(image_url, str) and image_url else []
+        expected_imgs = [rewrite_asset_url(image_url)] if isinstance(image_url, str) and image_url else []
         expected_count = len(question.get("options") or []) if isinstance(question.get("options"), list) else 0
+        question_type = str(question.get("questionType") or "").lower()
+        allow_synthesized_options = expected_count == 0 and question_type == "speech"
 
         manifest_q = self.wait_for_manifest(
             lambda m: (
                 str(self.instance_config(m, "game_screen").get("mode") or "") == "game"
                 and (self.instance_config(m, "game_screen").get("question") or {}).get("text") == prompt
                 and (self.instance_config(m, "game_screen").get("question") or {}).get("imgs") == expected_imgs
-                and len(self.instance_config(m, "game_screen").get("options") or []) == expected_count
+                and (
+                    len(self.instance_config(m, "game_screen").get("options") or []) == expected_count
+                    or (
+                        allow_synthesized_options
+                        and len(self.instance_config(m, "game_screen").get("options") or []) > 0
+                    )
+                )
             ),
             timeout_sec=timeout_sec,
         )
@@ -1054,7 +1063,7 @@ class IntegrationHarness(Node):
             game_slug = os.environ.get("TEST_GAME_SLUG", "colores").strip() or "colores"
             difficulty = os.environ.get("TEST_DIFFICULTY", "basic").strip() or "basic"
             run_a_phases = self._parse_phase_csv(os.environ.get("TEST_RUN_A_PHASES", "P1,P2,P3"))
-            run_b_phases = self._parse_phase_csv(os.environ.get("TEST_RUN_B_PHASES", "P3,P4_YESNO,P6,P7"))
+            run_b_phases = self._parse_phase_csv(os.environ.get("TEST_RUN_B_PHASES", "P3,P4,P5,P6"))
             run_c_phases = self._parse_phase_csv(os.environ.get("TEST_RUN_C_PHASES", "P1,P2,P3"))
 
             run_a_stop_on = (

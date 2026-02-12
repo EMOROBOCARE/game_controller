@@ -1,0 +1,70 @@
+# Colores - Color recognition and naming game
+slug: colores
+title: Colores
+image: assets/colores.png
+intro: "Vamos a jugar a los colores."
+requires:
+  - chatbot
+  - tts
+
+correct_effects:
+  - confetti
+  - sparkles
+  - emoji
+
+positive_feedback:
+  reaction: happy
+  fewshot_examples:
+    - "¡Muy bien! Es el color {expr}"
+    - "¡Perfecto! Es el color {expr}"
+    - "¡Genial! Es el color {expr}"
+
+hint_timeout: 8  # Seconds before giving a hint
+
+# Phases supported by this game (P1-P6)
+supportedPhases:
+  - P1   # Association (drag matching)
+  - P2   # Repetition (voice)
+  - P3   # Discrimination (touch/voice)
+  - P4   # Yes/No
+  - P5   # Pointing
+  - P6   # Choice
+
+difficulties:
+  basic:
+    level: basic
+    optionsCount: 2
+  intermediate:
+    level: intermediate
+    optionsCount: 3
+  advanced:
+    level: advanced
+    optionsCount: 4
+
+answerType: colours
+
+phaseConfig:
+  P1:
+    text_instructions: "Une los colores iguales."
+    verbal_instructions: "Une los colores iguales."
+  P2:
+    text_instructions: "Repite el nombre del color."
+    verbal_instructions: "Repite el nombre del color."
+    prompt: "¿Qué color es? Es el color {colour}."
+  P3:
+    text_instructions: "Señala el color correcto."
+    verbal_instructions: "Señala el color correcto."
+    prompt: "Señala el color {colour}"
+  P4:
+    text_instructions: "Responde sí o no a las preguntas."
+    verbal_instructions: "Responde sí o no a las preguntas."
+    prompt: "¿Es esto el color {colour}?"
+  P5:
+    text_instructions: "Dime qué color quieres señalar."
+    verbal_instructions: "Dime qué color quieres señalar."
+    prompt: "¿Dónde está el color?"
+    successResponse: "Aquííí"
+  P6:
+    text_instructions: "¿Cuál es el color correcto?"
+    verbal_instructions: "¿Cuál es el color correcto?"
+    prompt: "¿Es un {option1} o {option2}?"

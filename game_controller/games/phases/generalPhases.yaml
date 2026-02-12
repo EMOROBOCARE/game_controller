@@ -1,0 +1,79 @@
+# General phase definitions shared across all games.
+# Phase names: P1 (Association), P2 (Repetition), P3 (Discrimination),
+# P4 (Yes/No), P5 (Pointing), P6 (Choice).
+
+P1:
+  # Association: drag matching images together
+  purpose: "Associate images to words"
+  text_instructions: "Une imágenes iguales para aprender nuevas palabras. Elige la opción correcta."
+  verbal_instructions: "Elige la opción correcta."
+  hints:
+    - highlight
+    - highlight
+    - say_answer
+  maxFailures: 2
+
+P2:
+  # Repetition: pronounce words out loud
+  purpose: "Learning how to pronounce words"
+  text_instructions: "Repite después de mí."
+  verbal_instructions: "Repite después de mí."
+  prompt: "¿Qué {verb}? {verb.title()} {determinant} {word}."
+  hints:
+    - clear_say
+    - model_and_correct
+  maxFailures: 2
+
+P3:
+  # Discrimination: touch or voice to select the correct image
+  purpose: "Discriminate between different images and pronounce words"
+  text_instructions: "Responde a las siguientes preguntas tocando la imagen correcta."
+  verbal_instructions: "Responde a las siguientes preguntas tocando la imagen correcta."
+  prompt: "Game dependent"
+  hints:
+    - highlight
+    - highlight_and_solve
+  maxFailures: 2
+
+P4:
+  # Yes/No: asks incorrect first (No), then correct (Yes)
+  purpose: "Yes/No discrimination - asks incorrect first (No), then correct (Yes)"
+  text_instructions: "Responde a las siguientes preguntas diciendo sí o no."
+  verbal_instructions: "Responde a las siguientes preguntas diciendo sí o no."
+  prompt: "¿Es esto {determinant} {word}?"
+  hints:
+    - head_gesture
+    - explain
+  maxFailures: 2
+  # Difficulty-dependent answer ordering
+  answerOrderByDifficulty:
+    basic: [incorrect, correct]      # No first, Yes second
+    intermediate: [correct, incorrect] # Yes first, No second
+    advanced: random                  # Random order
+
+P5:
+  # Pointing: child requests items, robot highlights and confirms
+  purpose: "Child requests items, robot highlights and confirms"
+  text_instructions: "Dime qué quieres señalar."
+  verbal_instructions: "Dime qué quieres señalar."
+  prompt: "¿Dónde está?"
+  expectedAnswer: null
+  successResponse: "Aquííí"
+  hints: []  # No hints - P5 never fails
+  maxFailures: 0
+  timeoutAction: skip_to_next_phase
+
+P6:
+  # Choice: two-option "¿Es un ... o ...?" with difficulty-based position
+  purpose: "Two-option choice - correct position varies by difficulty"
+  text_instructions: "¿Cuál es la respuesta correcta?"
+  verbal_instructions: "¿Cuál es la respuesta correcta?"
+  prompt: "¿Es un {option1} o {option2}?"
+  hints:
+    - suggest
+    - offer_choices
+  maxFailures: 2
+  correctPositionByDifficulty:
+    basic: second
+    intermediate: first
+    advanced: random

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import Any, Optional
 
-from ..models.phase import PhaseConfig, DEFAULT_PHASE_CONFIGS
+from ..models.phase import Modality, PhaseConfig, DEFAULT_PHASE_CONFIGS
 from ..models.difficulty import DifficultyLevel
 from .base import BasePhaseHandler
 from .discrimination import DiscriminationPhaseHandler
@@ -21,9 +21,9 @@ def get_phase_handler(
     """Get the appropriate phase handler for a phase code.
 
     Args:
-        phase_code: Phase identifier (P1, P2, P3, P4_YESNO, P6, P7, etc.)
+        phase_code: Phase identifier (P1, P2, P3, P4, P5, P6, etc.)
         config: Phase configuration
-        difficulty: Difficulty level (used by P7)
+        difficulty: Difficulty level
 
     Returns:
         Appropriate phase handler instance
@@ -31,26 +31,25 @@ def get_phase_handler(
     code_upper = phase_code.upper()
 
     if code_upper in ("P1", "MATCHING", "ASSOCIATION"):
-        return DiscriminationPhaseHandler(config)
+        return DiscriminationPhaseHandler(config, default_modality=Modality.DRAGGING)
 
     if code_upper in ("P2", "REPETITION", "VOICE"):
-        return DiscriminationPhaseHandler(config)
+        return DiscriminationPhaseHandler(config, default_modality=Modality.VOICE)
 
     if code_upper in ("P3", "DISCRIMINATION"):
-        return DiscriminationPhaseHandler(config)
+        return DiscriminationPhaseHandler(config, default_modality=Modality.BUTTON)
 
-    if code_upper in ("P4_YESNO", "P4", "P5", "YES_NO", "YESNO"):
+    if code_upper in ("P4", "YES_NO", "YESNO"):
         return UnifiedYesNoHandler(config)
 
-    if code_upper in ("P6", "POINTING"):
+    if code_upper in ("P5", "POINTING"):
         return PointingPhaseHandler(config)
 
-    if code_upper in ("P7", "CHOICE"):
-        handler = ChoicePhaseHandler(config, difficulty)
-        return handler
+    if code_upper in ("P6", "CHOICE"):
+        return ChoicePhaseHandler(config, difficulty)
 
     if code_upper == "TRACING":
-        return DiscriminationPhaseHandler(config)
+        return DiscriminationPhaseHandler(config, default_modality=Modality.BUTTON)
 
     # Default to discrimination handler
     return DiscriminationPhaseHandler(config)

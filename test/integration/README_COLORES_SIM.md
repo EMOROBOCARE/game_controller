@@ -1,16 +1,19 @@
-# Colores Full Game Simulation
+# Colores Game Simulation
 
-This script simulates a complete colores game session with all 6 phases and captures every manifest state for UI development reference.
+This script simulates a colores game session and captures manifest states for UI development reference.
 
 ## Overview
 
 The `simulate_colores_full_game.py` script:
 
-1. Starts a colores game with all 6 phases (P1, P2, P3, P4_YESNO, P6, P7)
+1. Starts a colores game with configurable phases
 2. Uses basic difficulty (2 colors: red, blue)
 3. Captures EVERY manifest state transition
 4. Saves manifest snapshots with descriptions and metadata
 5. Creates a well-organized folder structure for UI developers
+
+Default compose profile (`docker-compose.colores-sim.yml`) runs a stable mock subset:
+`P1,P2,P3,P4`.
 
 ## Output Structure
 
@@ -30,12 +33,10 @@ colores_full_game/
 │   └── description.md               # Human-readable docs
 ├── 01_P1_phase_intro/               # Phase 1 intro
 │   ├── manifest.json
-│   ├── patches.json                 # Patches applied
 │   ├── decision_state.json
 │   └── description.md
 ├── 02_P1_question_1_present/        # Question presented
 │   ├── manifest.json
-│   ├── patches.json
 │   ├── decision_state.json
 │   └── description.md
 ├── 03_P1_question_1_wait_input/     # Waiting for input
@@ -50,7 +51,7 @@ colores_full_game/
 │   └── ...
 ├── 08_P2_phase_intro/               # Next phase...
 │   └── ...
-... (continues through all 6 phases)
+... (continues through configured phases)
 ```
 
 ## Running the Simulation
@@ -102,20 +103,24 @@ Environment variables:
   - Docker compose uses: 88 (dedicated)
   - Adjust if you have domain conflicts
 
+- `COLORES_SIM_PHASES`: Comma-separated phase list used by simulator
+  - Default in script: `P1,P2,P3,P4,P5,P6`
+  - Default in `docker-compose.colores-sim.yml`: `P1,P2,P3,P4`
+
 ## What Gets Captured
 
 For each state, the script captures:
 
 1. **manifest.json** - Complete manifest at that moment
-2. **patches.json** - JSON patches applied to reach this state (when available)
-3. **decision_state.json** - Full decision_making FSM state
-4. **description.md** - Human-readable documentation including:
+2. **decision_state.json** - Full decision_making FSM state
+3. **description.md** - Human-readable documentation including:
    - State description
    - Phase and question number
    - Whether input is enabled
    - Expected user actions
    - Next state transitions
    - Manifest highlights (mode, question, options)
+4. **patches.json** (optional) - Included only when incremental patch data is emitted by the backend/test stack
 
 ## Use Cases for UI Developers
 
@@ -135,7 +140,7 @@ Use manifest.json files to:
 
 Compare sequential states to understand:
 - What changes between states
-- How patches modify the manifest
+- How manifest snapshots evolve between states
 - When input is enabled/disabled
 
 ### 4. Debugging UI Issues

@@ -13,16 +13,18 @@ Rounds/questions sent to `decision_making` are generated at runtime by `build_ga
 
 ```text
 game_controller/game_controller/games/
-  colores.json
+  colores.yaml
   answers/
     colours.json
   phases/
-    generalPhases.json
+    generalPhases.yaml
 ```
 
-## Game File Schema (`games/<slug>.json`)
+`load_game_content()` is YAML-first (`.yaml`) with JSON fallback (`.json`).
 
-Example (`colores.json`):
+## Game File Schema (`games/<slug>.yaml`)
+
+Example (`colores.yaml`):
 
 ```json
 {
@@ -31,7 +33,7 @@ Example (`colores.json`):
   "image": "assets/colores.png",
   "intro": "Vamos a jugar a los colores.",
   "requires": ["chatbot", "tts"],
-  "supportedPhases": ["P1", "P2", "P3", "P4_YESNO", "P6", "P7"],
+  "supportedPhases": ["P1", "P2", "P3", "P4", "P6", "TRACING"],
   "difficulties": {
     "basic": { "level": "basic", "optionsCount": 2 }
   },
@@ -104,12 +106,16 @@ Generated round shape:
 
 ## Phase Notes
 Controller defaults include:
-- `P1`, `P2`, `P3`, `P4_YESNO`, `P6`, `P7`, `TRACING`
+- `P1`, `P2`, `P3`, `P4`, `P5`, `P6`, `TRACING`
 
 Behavior comes from generated question payloads + `phaseConfigs` passed to `decision_making`.
 
+Legacy aliases are normalized automatically:
+- `P4_YESNO` -> `P4`
+- `P7` -> `P6` (legacy numbering mode)
+
 ## Adding A New Game
-1. Create `games/<slug>.json`.
+1. Create `games/<slug>.yaml`.
 2. Add answer pool `games/answers/<type>.json` and set `answerType`.
 3. Set `supportedPhases` and optional `phaseConfig` prompt templates.
 4. Verify menu metadata appears in initial manifest.

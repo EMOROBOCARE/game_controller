@@ -1,0 +1,9 @@
+# GetManifest service definition (stub for testing)
+#
+# Returns the current full UI manifest.
+
+# Request (empty)
+---
+# Response
+string manifest_json      # Full manifest JSON
+string manifest_hash      # Hash of the current manifest

@@ -1,0 +1,65 @@
+# Emociones - Emotion recognition game
+slug: emociones
+title: Emociones
+image: assets/emociones.png
+intro: "Vamos a jugar a las emociones."
+
+correct_effects:
+  - confetti
+  - sparkles
+  - emoji
+
+positive_feedback:
+  - "¡Genial! Estoy {expr}"
+  - "¡Muy bien! Estoy {expr}"
+  - "¡Perfecto! Estoy {expr}"
+
+hint_timeout: 8
+
+supportedPhases:
+  - P1
+  - P2
+  - P3
+  - P4
+  - P5
+  - P6
+
+difficulties:
+  basic:
+    level: basic
+    optionsCount: 2
+  intermediate:
+    level: intermediate
+    optionsCount: 3
+  advanced:
+    level: advanced
+    optionsCount: 4
+
+answerType: emotions
+
+phaseConfig:
+  P1:
+    text_instructions: "Une las emociones iguales."
+    verbal_instructions: "Une las emociones iguales."
+    prompt: "Une {emocion} con {emocion}"
+  P2:
+    text_instructions: "Repite el nombre de la emoción."
+    verbal_instructions: "Repite el nombre de la emoción."
+    prompt: "¿Qué emoción es? Estoy {emocion}."
+  P3:
+    text_instructions: "Señala la emoción correcta."
+    verbal_instructions: "Señala la emoción correcta."
+    prompt: "Señala {emocion}"
+  P4:
+    text_instructions: "Responde sí o no a las preguntas."
+    verbal_instructions: "Responde sí o no a las preguntas."
+    prompt: "¿Estoy {emocion}?"
+  P5:
+    text_instructions: "Dime qué emoción quieres señalar."
+    verbal_instructions: "Dime qué emoción quieres señalar."
+    prompt: "¿Dónde está la emoción?"
+    successResponse: "Aquííí"
+  P6:
+    text_instructions: "¿Cuál es la emoción correcta?"
+    verbal_instructions: "¿Cuál es la emoción correcta?"
+    prompt: "¿Estoy {option1} o {option2}?"

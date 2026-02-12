@@ -40,9 +40,22 @@ def extract_user_answer(input_data: dict[str, Any]) -> Tuple[Optional[str], Opti
     """Extract user answer and correctness from input data."""
     value = input_data.get("label")
     if value is None:
-        value = input_data.get("value") or input_data.get("answer")
+        value = input_data.get("value")
+
+    nested_answer = input_data.get("answer")
+    if value is None and isinstance(nested_answer, dict):
+        value = (
+            nested_answer.get("label")
+            or nested_answer.get("value")
+            or nested_answer.get("id")
+            or nested_answer.get("text")
+        )
+    if value is None:
+        value = nested_answer
 
     correct = input_data.get("correct")
+    if correct is None and isinstance(nested_answer, dict):
+        correct = nested_answer.get("correct")
     return (
         str(value) if value is not None else None,
         bool(correct) if correct is not None else None,
@@ -142,8 +155,10 @@ class InputTranslator:
         if control_event is not None:
             return control_event
 
-        # Only accept user intents in WAIT_INPUT state
-        if self._current_game_state not in ("WAIT_INPUT", "FAIL_L1"):
+        # decision_making only accepts USER_INTENT while waiting for input.
+        # Allowing intents in FAIL_L1 can cancel the retry auto-advance timer
+        # and leave gameplay stuck on the failure feedback screen.
+        if self._current_game_state != "WAIT_INPUT":
             return None
 
         if self._current_transaction_id is None:

@@ -17,53 +17,39 @@ from ..models.difficulty import get_options_count
 # Default phase configurations
 PHASE_DEFAULTS: Dict[str, Dict[str, Any]] = {
     "P1": {
-        "interactionType": "matching",
-        "failL1Action": "blink_correct",
-        "failL2Action": "highlight_and_select",
+        "hints": ["highlight", "highlight", "say_answer"],
         "maxFailures": 2,
         "config": {},
     },
     "P2": {
-        "interactionType": "voice",
-        "failL1Action": "clear_say",
-        "failL2Action": "model_and_correct",
+        "hints": ["clear_say", "model_and_correct"],
         "maxFailures": 2,
         "config": {},
     },
     "P3": {
-        "interactionType": "touch_voice",
-        "failL1Action": "point",
-        "failL2Action": "highlight_and_solve",
+        "hints": ["highlight", "highlight_and_solve"],
         "maxFailures": 2,
         "config": {},
     },
-    "P4_YESNO": {
-        "interactionType": "yes_no",
-        "failL1Action": "shake_head",
-        "failL2Action": "explain",
+    "P4": {
+        "hints": ["head_gesture", "explain"],
         "maxFailures": 2,
         "subRounds": 2,
         "config": {},
     },
-    "P6": {
-        "interactionType": "pointing",
-        "failL1Action": "skip",
-        "failL2Action": "skip",
+    "P5": {
+        "hints": [],
         "maxFailures": 0,
         "successResponse": "Aquííí",
         "config": {},
     },
-    "P7": {
-        "interactionType": "selection",
-        "failL1Action": "suggest",
-        "failL2Action": "offer_choices",
+    "P6": {
+        "hints": ["suggest", "offer_choices"],
         "maxFailures": 2,
         "config": {},
     },
     "TRACING": {
-        "interactionType": "drawing",
-        "failL1Action": "illuminate",
-        "failL2Action": "guide",
+        "hints": ["illuminate", "guide"],
         "maxFailures": 2,
         "config": {},
     },
@@ -115,28 +101,36 @@ def _safe_format(template: Optional[str], values: Dict[str, Any]) -> str:
         return str(template)
 
 
-def _fallback_prompt(phase: str, phase_cfg: Dict[str, Any], values: Dict[str, Any]) -> str:
-    """Return a non-empty prompt when templates are missing.
+def _fallback_prompt(phase: str, phase_cfg: Dict[str, Any], values: Dict[str, Any]) -> tuple[str, str]:
+    """Return (prompt_text, prompt_verbal) when templates are missing.
 
     game_controller uses question.prompt for EmorobCare expressive TTS in QUESTION_PRESENT, so prompts should not be empty.
     """
-    intro = phase_cfg.get("phase_introduction") or phase_cfg.get("phaseIntroduction")
+    intro = (
+        phase_cfg.get("verbal_instructions")
+        or phase_cfg.get("verbalInstructions")
+        or phase_cfg.get("text_instructions")
+        or phase_cfg.get("textInstructions")
+        or phase_cfg.get("phase_introduction")
+        or phase_cfg.get("phaseIntroduction")
+    )
     if isinstance(intro, str) and intro.strip():
-        return intro.strip()
+        return intro.strip(), intro.strip()
 
     expr = str(values.get("expr") or "").strip()
     if phase in {"P1", "P3"} and expr:
-        return f"Señala {expr}"
+        return f"Señala {expr}", f"Señala {expr}"
 
-    if phase == "P4_YESNO" and expr:
-        return f"¿Es esto {expr}?"
+    if phase == "P4" and expr:
+        return f"¿Es esto {expr}?", f"¿Es esto {expr}?"
 
     option1 = str(values.get("option1") or "").strip()
     option2 = str(values.get("option2") or "").strip()
-    if phase == "P7" and option1 and option2:
-        return f"¿Es un {option1} o {option2}?"
+    if phase == "P6" and option1 and option2:
+        text = f"¿Es un {option1} o {option2}?"
+        return text, text
 
-    return "Elige una opción."
+    return "Elige una opción.", "Elige una opción."
 
 
 def _normalize_answer_items(raw: Any) -> List[Dict[str, Any]]:
@@ -249,16 +243,23 @@ def _generate_rounds_from_answers(
     for phase in phase_sequence:
         phase_upper = str(phase).upper()
         phase_cfg = phase_configs.get(phase_upper, {})
-        prompt_template = phase_cfg.get("prompt")
-        interaction_type = str(phase_cfg.get("interactionType", "") or "").lower()
+        prompt_verbal_tmpl = phase_cfg.get("promptVerbal") or phase_cfg.get("prompt_verbal") or phase_cfg.get("prompt")
+        prompt_text_tmpl = phase_cfg.get("promptText") or phase_cfg.get("prompt_text") or prompt_verbal_tmpl
 
         # Shuffle per phase to reduce repetition.
         phase_items = list(all_items)
         rng.shuffle(phase_items)
 
-        if phase_upper == "P4_YESNO":
+        if phase_upper == "P4":
             sub_rounds = int(phase_cfg.get("subRounds") or 2)
             sequence = phase_cfg.get("subRoundSequence") or ["incorrect", "correct"]
+
+            # P4 difficulty-dependent answer ordering
+            answer_order = phase_cfg.get("answerOrderByDifficulty", {})
+            if isinstance(answer_order, dict) and difficulty in answer_order:
+                order = answer_order[difficulty]
+                if isinstance(order, list):
+                    sequence = order
 
             for i in range(max(0, rounds_per_phase)):
                 correct_item = phase_items[i % len(phase_items)]
@@ -284,19 +285,18 @@ def _generate_rounds_from_answers(
                     }
                     if item_type:
                         values[str(item_type)] = asked_label
-                    # Common Spanish placeholders used across game configs.
                     values.setdefault("animal", asked_label)
                     values.setdefault("fruta", asked_label)
                     values.setdefault("emocion", asked_label)
                     values.setdefault("forma", asked_label)
                     values.setdefault("objeto", asked_label)
                     values.setdefault("lugar", asked_label)
-                    # Colours game uses English placeholder.
                     values.setdefault("colour", asked_label)
 
-                    prompt = _safe_format(prompt_template, values)
-                    if not str(prompt).strip():
-                        prompt = _fallback_prompt(phase_upper, phase_cfg, values)
+                    prompt_verbal = _safe_format(prompt_verbal_tmpl, values)
+                    prompt_text = _safe_format(prompt_text_tmpl, values)
+                    if not str(prompt_verbal).strip():
+                        prompt_text, prompt_verbal = _fallback_prompt(phase_upper, phase_cfg, values)
                     options = generate_yes_no_options(yes_no)
 
                     rounds.append(
@@ -306,7 +306,9 @@ def _generate_rounds_from_answers(
                             "difficulty": difficulty,
                             "question": {
                                 "questionId": question_id,
-                                "prompt": prompt,
+                                "prompt": prompt_verbal,
+                                "promptText": prompt_text,
+                                "promptVerbal": prompt_verbal,
                                 "imageUrl": image_url,
                                 "answer": yes_no,
                                 "questionType": "yes_no",
@@ -347,12 +349,12 @@ def _generate_rounds_from_answers(
 
             image_url = correct_item.get("image")
 
-            # Voice-only phases typically don't render options.
-            if interaction_type == "voice" and phase_upper == "P2":
+            # P2 is voice-only: no options
+            if phase_upper == "P2":
                 options: List[Dict[str, Any]] = []
                 question_type = "speech"
 
-            elif phase_upper == "P7":
+            elif phase_upper == "P6":
                 options = _build_choice_options(
                     correct_item,
                     all_items,
@@ -363,17 +365,24 @@ def _generate_rounds_from_answers(
                 values["option2"] = options[1].get("label", "")
                 question_type = "multiple_choice"
 
-            elif phase_upper == "P6":
-                # P6: no single correct answer - any selection can be accepted.
-                # Keep a reduced set to match difficulty option count.
+            elif phase_upper == "P5":
+                # P5 is evaluated with a single expected answer in decision_making,
+                # so always include the answer option in the rendered choices.
                 count = get_options_count(difficulty)
-                sample = rng.sample(all_items, min(count, len(all_items)))
+                distractors = [
+                    it
+                    for it in all_items
+                    if it.get("value", it.get("label", "")) != correct_item.get("value", correct_label)
+                ]
+                distractor_count = min(max(0, count - 1), len(distractors))
+                sample = [correct_item] + rng.sample(distractors, distractor_count)
+                rng.shuffle(sample)
                 options = [
                     {
                         "id": it.get("value", it.get("label", "")),
                         "label": it.get("label", ""),
                         "imageUrl": it.get("image"),
-                        "correct": True,
+                        "correct": it.get("value", it.get("label", "")) == correct_item.get("value", correct_label),
                     }
                     for it in sample
                 ]
@@ -387,9 +396,10 @@ def _generate_rounds_from_answers(
                 )
                 question_type = "multiple_choice"
 
-            prompt = _safe_format(prompt_template, values)
-            if not str(prompt).strip():
-                prompt = _fallback_prompt(phase_upper, phase_cfg, values)
+            prompt_verbal = _safe_format(prompt_verbal_tmpl, values)
+            prompt_text = _safe_format(prompt_text_tmpl, values)
+            if not str(prompt_verbal).strip():
+                prompt_text, prompt_verbal = _fallback_prompt(phase_upper, phase_cfg, values)
 
             rounds.append(
                 {
@@ -398,7 +408,9 @@ def _generate_rounds_from_answers(
                     "difficulty": difficulty,
                     "question": {
                         "questionId": question_id,
-                        "prompt": prompt,
+                        "prompt": prompt_verbal,
+                        "promptText": prompt_text,
+                        "promptVerbal": prompt_verbal,
                         "imageUrl": image_url,
                         "answer": correct_item.get("value", correct_label),
                         "questionType": question_type,
@@ -414,13 +426,53 @@ def _generate_rounds_from_answers(
     return rounds
 
 
+_LEGACY_PHASE_RENAME_MAP: Dict[str, str] = {
+    "P4_YESNO": "P4",
+    "P6": "P5",
+    "P7": "P6",
+}
+_MODERN_PHASE_RENAME_MAP: Dict[str, str] = {
+    "P4_YESNO": "P4",
+}
+
+
+def _uses_legacy_phase_numbering(names: List[str]) -> bool:
+    """Detect legacy numbering where old P7 exists."""
+    normalized = {str(name).strip().upper() for name in names if str(name).strip()}
+    return "P7" in normalized
+
+
+def _normalize_phase_name(name: str, legacy_numbering: bool = False) -> str:
+    """Map phase names to current codes, preserving modern P5/P6 numbering."""
+    upper = name.strip().upper()
+    mapping = _LEGACY_PHASE_RENAME_MAP if legacy_numbering else _MODERN_PHASE_RENAME_MAP
+    return mapping.get(upper, upper)
+
+
 def normalize_phase_list(raw: Any) -> List[str]:
-    """Normalize phase list input."""
+    """Normalize phase list input, mapping legacy phase names."""
     if isinstance(raw, str):
         raw = [raw]
     if not isinstance(raw, list):
         return []
-    return [str(item).strip().upper() for item in raw if str(item).strip()]
+    cleaned = [str(item) for item in raw if str(item).strip()]
+    legacy_numbering = _uses_legacy_phase_numbering(cleaned)
+    normalized: List[str] = []
+    for item in cleaned:
+        phase = _normalize_phase_name(item, legacy_numbering=legacy_numbering)
+        if phase not in normalized:
+            normalized.append(phase)
+    return normalized
+
+
+def _normalize_phase_config_keys(raw: Dict[str, Any]) -> Dict[str, Any]:
+    """Normalize phase config dict keys from legacy to current names."""
+    normalized: Dict[str, Any] = {}
+    legacy_numbering = _uses_legacy_phase_numbering(list(raw.keys()))
+    for key, value in raw.items():
+        new_key = _normalize_phase_name(key, legacy_numbering=legacy_numbering)
+        normalized[new_key] = value
+    return normalized
 
 
 def build_phase_configs(
@@ -431,6 +483,9 @@ def build_phase_configs(
     configs: Dict[str, Dict[str, Any]] = {}
     phase_defaults = _get_phase_defaults()
 
+    # Normalize game config keys (e.g. P4_YESNO → P4)
+    normalized_game_configs = _normalize_phase_config_keys(game_phase_configs) if game_phase_configs else {}
+
     for phase in phases:
         phase_upper = phase.upper()
 
@@ -438,11 +493,8 @@ def build_phase_configs(
         default_config = phase_defaults.get(phase_upper, {})
 
         # Merge with game-specific config
-        if game_phase_configs and phase_upper in game_phase_configs:
-            game_config = game_phase_configs[phase_upper]
-            configs[phase_upper] = {**default_config, **game_config}
-        elif game_phase_configs and phase in game_phase_configs:
-            game_config = game_phase_configs[phase]
+        if phase_upper in normalized_game_configs:
+            game_config = normalized_game_configs[phase_upper]
             configs[phase_upper] = {**default_config, **game_config}
         else:
             configs[phase_upper] = dict(default_config)

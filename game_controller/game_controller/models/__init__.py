@@ -2,7 +2,7 @@
 
 from .difficulty import DifficultyLevel, DifficultyConfig
 from .option import Option, OptionSet
-from .phase import InteractionType, PhaseConfig, PhaseType
+from .phase import Modality, InteractionType, PhaseConfig, PhaseType
 from .game import Question, Round, GameConfig
 from .state import GameState, StatePayload
 
@@ -11,6 +11,7 @@ __all__ = [
     "DifficultyConfig",
     "Option",
     "OptionSet",
+    "Modality",
     "InteractionType",
     "PhaseConfig",
     "PhaseType",

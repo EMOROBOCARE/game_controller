@@ -8,10 +8,13 @@
 ### Topics
 - `topics.decision_state` (default `/decision/state`)
 - `topics.intents` (default `/intents`)
+- `topics.ui_input` (default `/ui/input`)
 - `topics.game_selector` (default `/game/game_selector`)
 - `topics.user_selector` (default `/game/user_selector`)
 - `topics.decision_events` (default `/decision/events`)
 - `topics.current_user` (default `/game/current_user`)
+- `input_bridge.enabled` (default `true`, enables direct `/ui/input` subscriber)
+- `input_bridge.dedupe_window_sec` (default `0.35`)
 
 ### Generic UI
 - `generic_ui.update_manifest_service` (default `/generic_ui/update_manifest`)
@@ -47,8 +50,12 @@ Use custom params at launch:
 ros2 launch game_controller game_controller.launch.py \
   difficulty:=intermediate \
   rounds_per_phase:=3 \
-  phases:="['P1','P2','P3','P4_YESNO']"
+  phases:="['P1','P2','P3','P4']"
 ```
+
+Legacy aliases are still accepted in phase lists:
+- `P4_YESNO` maps to `P4`
+- `P7` maps to `P6` when legacy numbering is detected
 
 ## Environment Variables
 
@@ -57,9 +64,34 @@ ros2 launch game_controller game_controller.launch.py \
 - `ROS_LOCALHOST_ONLY`
 
 ### Manifest/UI helpers
+- `PROJECT_ASSET_BASE_URL`
+  - Base used to rewrite project-specific `assets/...` paths.
+  - Default: `/assets`
+- `EMOROBCARE_PROJECT_ASSET_BASE_URL`
+  - Compose-friendly alias used when `PROJECT_ASSET_BASE_URL` is empty/unset.
+  - Typical value: `http://localhost:8084/emorobcare-components/images`
+- `SHARED_ASSET_BASE_URL`
+  - Base used for shared bundle assets (`shared/...`, `images/...`, `fonts/...`).
+  - Default: `/emorobcare-components`
+- `GAME_CONTROLLER_REMOTE_ENTRY_BASE_URL`
+  - Base used to resolve remote entry as `<base>/assets/remoteEntry.js`.
+  - Useful in Docker Compose to keep remote-entry and shared-assets on the same base.
+  - Default: uses `SHARED_ASSET_BASE_URL`
+- `PROJECT_ASSET_IMAGE_DIR`
+  - Folder used when converting symbolic asset ids (for example `red_circle`).
+  - Default: `images`
+- `PROJECT_ASSET_ID_EXTENSION`
+  - Extension used when converting symbolic asset ids.
+  - Default: `png`
 - `ASSET_CDN_URL`
-  - Base used to rewrite `assets/...` paths for browser access.
-  - Default: `http://localhost:8084/emorobcare-components`
+  - Backward-compatible alias for `PROJECT_ASSET_BASE_URL`.
+- `GAME_CONTROLLER_REMOTE_ENTRY_URL`
+  - Explicit component bundle remote entry URL override.
+  - If set, it takes precedence over `GAME_CONTROLLER_REMOTE_ENTRY_BASE_URL`.
+  - Default: `<SHARED_ASSET_BASE_URL>/assets/remoteEntry.js`
+- `GAME_CONTROLLER_REMOTE_ENTRY_VERSION`
+  - Cache-busting query parameter appended to remote entry URL.
+  - Default: `20260210`
 - `GAME_CONTROLLER_INCLUDE_CORRECT_OPTIONS`
   - When truthy (`1/true/yes/on`), include `correct` field in UI options.
 
@@ -68,6 +100,13 @@ Typical dev mount points in `game_controller/docker-compose.yml`:
 - `./game_controller/games:/ros2_ws/src/game_controller/games:ro`
 
 This allows iterating game metadata without rebuilding the image.
+
+Recommended compose env pattern:
+- `EMOROBCARE_COMPONENTS_BASE_URL=http://localhost:8084/emorobcare-components`
+- `EMOROBCARE_PROJECT_ASSET_BASE_URL=http://localhost:8084/emorobcare-components/images`
+- `PROJECT_ASSET_BASE_URL=${EMOROBCARE_PROJECT_ASSET_BASE_URL}`
+- `SHARED_ASSET_BASE_URL=${EMOROBCARE_COMPONENTS_BASE_URL}`
+- `GAME_CONTROLLER_REMOTE_ENTRY_BASE_URL=${EMOROBCARE_COMPONENTS_BASE_URL}`
 
 ## Quick Validation
 ```bash
@@ -84,5 +123,5 @@ ros2 launch game_controller game_controller.launch.py \
 
 ## Common Misconfigurations
 - Manifest updates fail: `generic_ui` backend not providing `/generic_ui/update_manifest`.
-- Inputs ignored: `/ui/input` is not bridged to `/intents`.
-- Images missing in UI: `ASSET_CDN_URL` does not match deployed CDN path.
+- Inputs ignored: neither `/ui/input` (direct) nor `/intents` (bridge) is connected.
+- Images missing in UI: `PROJECT_ASSET_BASE_URL` / `EMOROBCARE_PROJECT_ASSET_BASE_URL` / `SHARED_ASSET_BASE_URL` do not match deployed paths.

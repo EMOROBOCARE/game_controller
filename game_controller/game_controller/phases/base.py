@@ -5,7 +5,7 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from typing import Any, Optional, Tuple
 
-from ..models.phase import PhaseConfig
+from ..models.phase import Modality, PhaseConfig
 from ..models.game import Question
 from ..models.option import Option
 
@@ -16,6 +16,12 @@ class BasePhaseHandler(ABC):
     def __init__(self, config: PhaseConfig) -> None:
         self.config = config
         self._failure_count: int = 0
+
+    @property
+    @abstractmethod
+    def modality(self) -> Modality:
+        """Fixed modality for this phase handler."""
+        ...
 
     def reset_failure_count(self) -> None:
         """Reset the failure counter."""
@@ -31,9 +37,14 @@ class BasePhaseHandler(ABC):
 
     def can_retry(self) -> bool:
         """Check if user can retry (hasn't exceeded max failures)."""
-        if self.config.max_failures <= 0:
-            return False
-        return self._failure_count < self.config.max_failures
+        return self._failure_count < self.config.effective_max_failures
+
+    def get_hint_action(self, failure_index: int) -> str:
+        """Get hint action for a given failure index."""
+        if not self.config.hints:
+            return "highlight"
+        idx = min(failure_index, len(self.config.hints) - 1)
+        return self.config.hints[idx]
 
     def setup_round(self, options: list[Option]) -> None:
         """Setup for a new round. Override in subclasses if needed."""
@@ -45,33 +56,17 @@ class BasePhaseHandler(ABC):
         input_data: dict[str, Any],
         question: Question,
     ) -> Tuple[bool, Optional[str]]:
-        """Evaluate user input.
-
-        Args:
-            input_data: User input data with 'value', 'label', 'correct' fields
-            question: Current question
-
-        Returns:
-            Tuple of (is_correct, optional_feedback_message)
-        """
+        """Evaluate user input."""
         raise NotImplementedError
 
     @abstractmethod
     def handle_failure_l1(self, question: Question) -> dict[str, Any]:
-        """Handle first level failure.
-
-        Returns:
-            Payload for FAIL_L1 state
-        """
+        """Handle first level failure."""
         raise NotImplementedError
 
     @abstractmethod
     def handle_failure_l2(self, question: Question) -> dict[str, Any]:
-        """Handle second level failure.
-
-        Returns:
-            Payload for FAIL_L2 state with auto_advance=True
-        """
+        """Handle second level failure."""
         raise NotImplementedError
 
     def get_hint_for_level(self, question: Question, level: int) -> str:
@@ -98,7 +93,7 @@ class BasePhaseHandler(ABC):
         """Build standard FAIL_L1 payload."""
         return {
             "hint": hint,
-            "action": self.config.fail_l1_action,
+            "action": self.get_hint_action(0),
             "correctOptionId": correct_id,
             "autoAdvance": False,
         }
@@ -111,7 +106,7 @@ class BasePhaseHandler(ABC):
         """Build standard FAIL_L2 payload."""
         return {
             "hint": hint,
-            "action": self.config.fail_l2_action,
+            "action": self.get_hint_action(1),
             "correctOptionId": correct_id,
             "autoAdvance": True,
         }

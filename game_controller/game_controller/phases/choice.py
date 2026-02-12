@@ -1,10 +1,11 @@
-"""Choice phase handler (P7)."""
+"""Choice phase handler (P6)."""
 
 from __future__ import annotations
 
 import random
 from typing import Any, Optional, Tuple
 
+from ..models.phase import Modality
 from ..models.game import Question
 from ..models.option import Option
 from ..models.difficulty import DifficultyLevel
@@ -12,7 +13,7 @@ from .base import BasePhaseHandler
 
 
 class ChoicePhaseHandler(BasePhaseHandler):
-    """Handler for P7 Choice phase.
+    """Handler for P6 Choice phase.
 
     Robot asks "¿Es un ... o ...?" with two options.
     The correct answer position depends on difficulty:
@@ -22,6 +23,10 @@ class ChoicePhaseHandler(BasePhaseHandler):
 
     User responds with the actual name (e.g., "rojo"), not position.
     """
+
+    @property
+    def modality(self) -> Modality:
+        return Modality.SELECTION
 
     def __init__(self, config: Any, difficulty: DifficultyLevel = "basic") -> None:
         super().__init__(config)

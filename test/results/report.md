@@ -1,7 +1,7 @@
 # game_controller ↔ decision_making integration report
 
 - Success: `True`
-- Duration: `36.8s`
+- Duration: `36.7s`
 - ROS_DOMAIN_ID: `43`
 
 ## Artifacts
@@ -11,7 +11,7 @@
 
 ## Runs
 - `run_a` requested=['P1', 'P2', 'P3'] seen=['P1', 'P2', 'P3'] correct=['P1', 'P2'] fail_once=['P1', 'P2'] exited_early=True
-- `run_b` requested=['P3', 'P4_YESNO', 'P6', 'P7'] seen=['P3', 'P4_YESNO', 'P6', 'P7'] correct=['P3', 'P4_YESNO', 'P6', 'P7'] fail_once=['P3', 'P4_YESNO', 'P7'] exited_early=False
+- `run_b` requested=['P3', 'P4', 'P5', 'P6'] seen=['P3', 'P4', 'P5', 'P6'] correct=['P3', 'P4', 'P5', 'P6'] fail_once=['P3', 'P4', 'P5'] exited_early=False
 - `run_c_controls` requested=['P1', 'P2', 'P3'] seen=['P1', 'P2', 'P3'] correct=['P1', 'P2', 'P3'] fail_once=['P1', 'P2', 'P3'] exited_early=False
 
 ## Notes

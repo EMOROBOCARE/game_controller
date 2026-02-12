@@ -1,19 +1,28 @@
-"""Discrimination phase handler (P3)."""
+"""Discrimination phase handler (P1/P2/P3)."""
 
 from __future__ import annotations
 
 from typing import Any, Optional, Tuple
 
+from ..models.phase import Modality
 from ..models.game import Question
 from .base import BasePhaseHandler
 
 
 class DiscriminationPhaseHandler(BasePhaseHandler):
-    """Handler for P3 Discrimination phase.
+    """Handler for P1/P2/P3 phases.
 
     User selects the correct option from multiple choices.
-    Supports touch and voice interaction.
+    Modality defaults to BUTTON but can be overridden via constructor.
     """
+
+    def __init__(self, config: Any, default_modality: Modality = Modality.BUTTON) -> None:
+        super().__init__(config)
+        self._modality = default_modality
+
+    @property
+    def modality(self) -> Modality:
+        return self._modality
 
     def evaluate_input(
         self,

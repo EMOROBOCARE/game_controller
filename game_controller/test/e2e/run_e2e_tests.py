@@ -73,8 +73,41 @@ class ROS2TestHelper:
     
     def pub(self, topic: str, msg_type: str, data: str) -> None:
         """Publish a ROS2 message."""
-        cmd = f"source /ws/install/setup.bash && ros2 topic pub --once {topic} {msg_type} '{data}'"
-        self.exec_cmd(self.decision_container, cmd)
+        # Publish from game_controller container because it includes hri_actions_msgs for /intents tests.
+        cmd = f"source /ros2_ws/install/setup.bash && ros2 topic pub --once {topic} {msg_type} '{data}'"
+        self.exec_cmd(self.game_controller_container, cmd)
+
+    def _publish_intent_payload(
+        self,
+        payload: Dict[str, Any],
+        modality: str = "__modality_touchscreen__",
+    ) -> None:
+        """Publish an Intent with JSON payload encoded in msg.data."""
+        payload_json = json.dumps(payload, ensure_ascii=False, separators=(",", ":"))
+        cmd = (
+            "source /ros2_ws/install/setup.bash && "
+            "python3 - <<'PY'\n"
+            "import time\n"
+            "import rclpy\n"
+            "from hri_actions_msgs.msg import Intent\n"
+            f"payload_json = {payload_json!r}\n"
+            f"modality = {modality!r}\n"
+            "rclpy.init()\n"
+            "node = rclpy.create_node('e2e_intent_publisher')\n"
+            "pub = node.create_publisher(Intent, '/intents', 10)\n"
+            "msg = Intent()\n"
+            "msg.intent = '__raw_user_input__'\n"
+            "msg.data = payload_json\n"
+            "msg.modality = modality\n"
+            "for _ in range(3):\n"
+            "    pub.publish(msg)\n"
+            "    rclpy.spin_once(node, timeout_sec=0.05)\n"
+            "    time.sleep(0.05)\n"
+            "node.destroy_node()\n"
+            "rclpy.shutdown()\n"
+            "PY"
+        )
+        self.exec_cmd(self.game_controller_container, cmd)
 
     def publish_raw_user_intent(
         self,
@@ -86,12 +119,7 @@ class ROS2TestHelper:
         payload: Dict[str, Any] = {"label": label}
         if correct is not None:
             payload["correct"] = correct
-        intent_data = json.dumps({"input": json.dumps(payload)})
-        data = (
-            "{intent: '__raw_user_input__', "
-            f"data: '{intent_data}', modality: '{modality}'}"
-        )
-        self.pub("/intents", "hri_actions_msgs/msg/Intent", data)
+        self._publish_intent_payload(payload, modality=modality)
     
     def echo_once(self, topic: str, timeout: int = 10) -> Optional[Dict[str, Any]]:
         """Get one message from a topic."""

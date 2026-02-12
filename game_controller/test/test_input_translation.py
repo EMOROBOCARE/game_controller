@@ -48,6 +48,20 @@ def test_extract_user_answer_prefers_label_then_value():
     assert correct is None
 
 
+def test_extract_user_answer_supports_nested_answer_object():
+    value, correct = extract_user_answer(
+        {
+            "answer": {
+                "label": "rojo",
+                "text": "Rojo",
+                "correct": True,
+            }
+        }
+    )
+    assert value == "rojo"
+    assert correct is True
+
+
 def test_translate_input_to_user_intent_uses_question_correctness():
     question = {
         "questionType": "yes_no",
@@ -95,3 +109,29 @@ def test_input_translator_allows_control_any_state():
     translator.update_state(5, game_state="PHASE_INTRO")
     event = translator.translate_input_data({"label": "EXIT"})
     assert event == {"type": "GAME_CONTROL", "payload": {"command": "EXIT"}}
+
+
+def test_input_translator_accepts_nested_answer_object():
+    translator = InputTranslator()
+    translator.update_state(
+        12,
+        game_state="WAIT_INPUT",
+        question={"questionType": "yes_no", "meta": {"correct_answer": "rojo"}},
+    )
+    event = translator.translate_input_data(
+        {"answer": {"label": "rojo", "text": "Rojo"}}
+    )
+    assert event is not None
+    assert event["type"] == "USER_INTENT"
+    assert event["payload"]["value"] == "rojo"
+    assert event["payload"]["transactionId"] == 12
+
+
+def test_input_translator_blocks_user_intent_in_fail_l1():
+    translator = InputTranslator()
+    translator.update_state(
+        13,
+        game_state="FAIL_L1",
+        question={"questionType": "yes_no", "meta": {"correct_answer": "si"}},
+    )
+    assert translator.translate_input_data({"label": "si"}) is None

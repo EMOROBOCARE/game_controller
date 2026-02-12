@@ -1,0 +1,5 @@
+# Request current manifest
+---
+# Response
+string manifest_json      # Full manifest as JSON string
+string manifest_hash      # Hash for cache invalidation

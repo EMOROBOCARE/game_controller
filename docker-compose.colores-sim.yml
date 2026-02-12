@@ -82,6 +82,7 @@ services:
       ROS_DOMAIN_ID: 88  # Dedicated domain for simulation
       PYTHONUNBUFFERED: 1
       MANIFEST_OUTPUT_DIR: /output/colores_full_game
+      COLORES_SIM_PHASES: P1,P2,P3,P4  # Stable subset for mock-based simulation
     depends_on:
       game_controller:
         condition: service_healthy

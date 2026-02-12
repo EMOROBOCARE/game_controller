@@ -12,7 +12,7 @@ Instead of creating a complex simulator for the Colores game, we use the **PROVE
 Integration Test          Post-Processor           UI Developer Output
 ─────────────────        ───────────────          ────────────────────
 ┌─────────────────┐      ┌─────────────┐          ┌──────────────────┐
-│ Docker Compose  │      │ Python      │          │ 57 State Dirs    │
+│ Docker Compose  │      │ Python      │          │ N State Dirs     │
 │ Integration     │──┬──▶│ Organizer   │─────────▶│ - manifest.json  │
 │ Test            │  │   │ Script      │          │ - decision_*.json│
 └─────────────────┘  │   └─────────────┘          │ - description.md │
@@ -32,9 +32,9 @@ Integration Test          Post-Processor           UI Developer Output
 
 ### Input Files (from integration test)
 
-- **`test/results/manifest_log.jsonl`**: All manifest updates captured during the test (57 entries)
-- **`test/results/decision_state_log.jsonl`**: All FSM state transitions (65 entries)
-- **`test/results/decision_event_log.jsonl`**: All FSM events (64 entries)
+- **`test/results/manifest_log.jsonl`**: Manifest snapshots captured during the run (`ts`, `step`, `decision`, `manifest_hash`, `manifest`)
+- **`test/results/decision_state_log.jsonl`**: FSM state transitions
+- **`test/results/decision_event_log.jsonl`**: FSM events
 
 ### Output Directory
 
@@ -81,7 +81,7 @@ The post-processor creates this structure:
 │   └── description.md
 ├── 02_run_a_question_present_q1/  # First question
 │   └── ...
-... (57 total states)
+... (N total states)
 ```
 
 ## State Types Captured

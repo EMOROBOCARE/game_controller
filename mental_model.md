@@ -21,9 +21,9 @@ This document describes the current runtime behavior of `game_controller` in thi
 ## Current UI Model
 Manifest layout is stable and always includes:
 - `user_panel` (`UserPanel`)
-- `game_screen` (`GameScreenComponent`)
+- `game_screen` (swaps between `GameSelector` and `GameComponent`)
 
-No per-phase mount/unmount flow is used. State is rendered by patching `game_screen.config`.
+No per-phase layout changes are used. State is rendered by patching `game_screen` config and component.
 
 ## Runtime Spine
 1. Startup sends initial manifest (`set`).
@@ -31,14 +31,14 @@ No per-phase mount/unmount flow is used. State is rendered by patching `game_scr
 3. Game selection arrives on `/game/game_selector`.
 4. Controller builds payload from game metadata and publishes `GAME_INIT`.
 5. FSM state updates arrive on `/decision/state`.
-6. Controller patches mode/state/phase/question/options/controls.
+6. Controller patches state/phase/question/items/answerType/effect/pause.
 7. Inputs arrive on `/intents` and are translated to events.
 8. Controller publishes `ON_COMPLETE` when state progression requires it.
 
 ## Invariants
 - `transactionId` from latest `/decision/state` must be used in `ON_COMPLETE` and `USER_INTENT`.
 - Answer intents are forwarded only in `WAIT_INPUT` and `FAIL_L1`.
-- On return to `IDLE`, controller switches UI mode to `menu` and clears stale gameplay fields.
+- On return to `IDLE`, controller switches `game_screen` to `GameSelector` and clears stale gameplay fields.
 
 ## Control Semantics
 Accepted control labels (from UI input translation path):

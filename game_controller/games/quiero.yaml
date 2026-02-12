@@ -1,0 +1,42 @@
+# Quiero - Requesting/wants game (P6 only)
+slug: quiero
+title: Quiero
+image: assets/quiero.png
+intro: "Vamos a jugar a decir qué quiero."
+
+correct_effects:
+  - confetti
+  - sparkles
+  - emoji
+
+positive_feedback:
+  - "¡Genial! Quieres {expr}"
+  - "¡Muy bien! Quieres {expr}"
+  - "¡Perfecto! Quieres {expr}"
+
+hint_timeout: 8
+
+# Only P6 (Choice) phase
+supportedPhases:
+  - P6
+
+difficulties:
+  basic:
+    level: basic
+    optionsCount: 2
+  intermediate:
+    level: intermediate
+    optionsCount: 3
+  advanced:
+    level: advanced
+    optionsCount: 4
+
+answerType: wants
+gameType: special
+specialHandler: quiero
+
+phaseConfig:
+  P6:
+    text_instructions: "Dime qué quieres."
+    verbal_instructions: "Dime qué quieres."
+    prompt: "¿Qué quiero? Quiero..."

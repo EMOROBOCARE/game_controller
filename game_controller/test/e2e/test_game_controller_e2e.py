@@ -15,12 +15,32 @@ from typing import Any, Dict, Optional
 
 import pytest
 
+try:
+    from .e2e_utils import DockerE2EContext
+except ImportError:
+    from e2e_utils import DockerE2EContext
+
 
 class ROS2Helper:
     """Helper for ROS2 interactions via docker exec."""
-    
-    DECISION_CONTAINER = "game_controller-decision_making-1"
-    GAME_CONTROLLER_CONTAINER = "game_controller-game_controller-1"
+
+    CONTEXT = DockerE2EContext()
+    DECISION_SERVICE = CONTEXT.decision_service
+    GAME_CONTROLLER_SERVICE = CONTEXT.game_controller_service
+
+    @classmethod
+    def _require_container(cls, service: str) -> str:
+        container = cls.CONTEXT.resolve_service_container(service)
+        if not container:
+            raise RuntimeError(f"Could not resolve container for service '{service}'")
+        return container
+
+    @classmethod
+    def preflight_reason(cls) -> Optional[str]:
+        return cls.CONTEXT.preflight_reason(
+            [cls.DECISION_SERVICE, cls.GAME_CONTROLLER_SERVICE],
+            require_compose=False,
+        )
     
     @classmethod
     def exec_cmd(cls, container: str, cmd: str, timeout: int = 30) -> str:
@@ -35,18 +55,60 @@ class ROS2Helper:
             return result.stdout + result.stderr
         except subprocess.TimeoutExpired:
             return ""
+
+    @classmethod
+    def exec_decision(cls, cmd: str, timeout: int = 30) -> str:
+        return cls.exec_cmd(cls._require_container(cls.DECISION_SERVICE), cmd, timeout=timeout)
+
+    @classmethod
+    def exec_game_controller(cls, cmd: str, timeout: int = 30) -> str:
+        return cls.exec_cmd(
+            cls._require_container(cls.GAME_CONTROLLER_SERVICE),
+            cmd,
+            timeout=timeout,
+        )
     
     @classmethod
     def pub(cls, topic: str, msg_type: str, data: str) -> None:
         """Publish a ROS2 message."""
-        cmd = f"source /ws/install/setup.bash && ros2 topic pub --once {topic} {msg_type} '{data}'"
-        cls.exec_cmd(cls.DECISION_CONTAINER, cmd)
+        # Publish from game_controller container because it includes hri_actions_msgs for /intents tests.
+        cmd = f"source /ros2_ws/install/setup.bash && ros2 topic pub --once {topic} {msg_type} '{data}'"
+        cls.exec_game_controller(cmd)
+
+    @classmethod
+    def publish_raw_user_intent(cls, payload: Dict[str, Any], modality: str = "__modality_touchscreen__") -> None:
+        """Publish an Intent with JSON payload encoded in msg.data."""
+        payload_json = json.dumps(payload, ensure_ascii=False, separators=(",", ":"))
+        cmd = (
+            "source /ros2_ws/install/setup.bash && "
+            "python3 - <<'PY'\n"
+            "import time\n"
+            "import rclpy\n"
+            "from hri_actions_msgs.msg import Intent\n"
+            f"payload_json = {payload_json!r}\n"
+            f"modality = {modality!r}\n"
+            "rclpy.init()\n"
+            "node = rclpy.create_node('e2e_intent_publisher')\n"
+            "pub = node.create_publisher(Intent, '/intents', 10)\n"
+            "msg = Intent()\n"
+            "msg.intent = '__raw_user_input__'\n"
+            "msg.data = payload_json\n"
+            "msg.modality = modality\n"
+            "for _ in range(3):\n"
+            "    pub.publish(msg)\n"
+            "    rclpy.spin_once(node, timeout_sec=0.05)\n"
+            "    time.sleep(0.05)\n"
+            "node.destroy_node()\n"
+            "rclpy.shutdown()\n"
+            "PY"
+        )
+        cls.exec_game_controller(cmd)
     
     @classmethod
     def get_state(cls) -> Optional[Dict[str, Any]]:
         """Get current decision state."""
         cmd = "source /ws/install/setup.bash && timeout 5 ros2 topic echo /decision/state --once"
-        output = cls.exec_cmd(cls.DECISION_CONTAINER, cmd, timeout=10)
+        output = cls.exec_decision(cmd, timeout=10)
         
         for line in output.split('\n'):
             if line.startswith('data:'):
@@ -94,24 +156,12 @@ class ROS2Helper:
     @classmethod
     def submit_answer(cls, label: str, correct: bool) -> None:
         """Submit a user answer."""
-        input_payload = json.dumps({"label": label, "correct": correct})
-        intent_data = json.dumps({"input": input_payload})
-        cls.pub(
-            "/intents",
-            "hri_actions_msgs/msg/Intent",
-            f"{{intent: '__raw_user_input__', data: '{intent_data}', modality: '__modality_touchscreen__'}}"
-        )
+        cls.publish_raw_user_intent({"label": label, "correct": correct})
 
     @classmethod
     def send_control(cls, command: str) -> None:
         """Send a control command through intents."""
-        input_payload = json.dumps({"label": command})
-        intent_data = json.dumps({"input": input_payload})
-        cls.pub(
-            "/intents",
-            "hri_actions_msgs/msg/Intent",
-            f"{{intent: '__raw_user_input__', data: '{intent_data}', modality: '__modality_touchscreen__'}}"
-        )
+        cls.publish_raw_user_intent({"label": command})
 
     @classmethod
     def start_fresh_game(cls, user_id: int, timeout: int = 15) -> Optional[Dict[str, Any]]:
@@ -138,8 +188,16 @@ def user_counter():
     return Counter()
 
 
+@pytest.fixture(scope="module", autouse=True)
+def e2e_context_ready():
+    """Skip module when docker/compose context is unavailable."""
+    reason = ROS2Helper.preflight_reason()
+    if reason:
+        pytest.skip(reason)
+
+
 @pytest.fixture(autouse=True)
-def reset_session_state():
+def reset_session_state(e2e_context_ready):
     """Best-effort reset to IDLE before each test."""
     ROS2Helper.send_control("EXIT")
     ROS2Helper.wait_for_system_state("IDLE", timeout=5)
@@ -150,26 +208,17 @@ class TestServiceAvailability:
     
     def test_decision_making_running(self):
         """decision_making node should be running."""
-        output = ROS2Helper.exec_cmd(
-            ROS2Helper.DECISION_CONTAINER,
-            "source /ws/install/setup.bash && ros2 node list"
-        )
+        output = ROS2Helper.exec_decision("source /ws/install/setup.bash && ros2 node list")
         assert "decision_making" in output
     
     def test_game_controller_running(self):
         """game_controller node should be running."""
-        output = ROS2Helper.exec_cmd(
-            ROS2Helper.GAME_CONTROLLER_CONTAINER,
-            "source /ros2_ws/install/setup.bash && ros2 node list"
-        )
+        output = ROS2Helper.exec_game_controller("source /ros2_ws/install/setup.bash && ros2 node list")
         assert "game_controller" in output
     
     def test_required_topics_exist(self):
         """All required topics should exist."""
-        output = ROS2Helper.exec_cmd(
-            ROS2Helper.DECISION_CONTAINER,
-            "source /ws/install/setup.bash && ros2 topic list"
-        )
+        output = ROS2Helper.exec_decision("source /ws/install/setup.bash && ros2 topic list")
         
         required = [
             "/decision/state",

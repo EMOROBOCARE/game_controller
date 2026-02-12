@@ -42,6 +42,8 @@ class ManifestClient:
         self._timeout_sec = timeout_sec
         self._client: Optional[Any] = None
         self._manifest_sent = False
+        self._queue: List[Dict[str, Any]] = []
+        self._in_flight = False
         
         if not HAS_MANIFEST_SERVICE:
             node.get_logger().warn(
@@ -129,31 +131,69 @@ class ManifestClient:
                 "Cannot send manifest update: service not available"
             )
             return False
-        
+
+        self._queue.append(
+            {
+                "operation": operation,
+                "payload": payload,
+                "on_response": on_response,
+            }
+        )
+        self._drain_queue()
+        return True
+
+    def _drain_queue(self) -> None:
+        if self._in_flight or not self._queue:
+            return
+        if not self.available:
+            # If the service disappeared, fail all queued updates deterministically.
+            pending = list(self._queue)
+            self._queue.clear()
+            for item in pending:
+                cb = item.get("on_response")
+                if cb:
+                    self._safe_invoke_callback(cb, False, "service unavailable", "")
+            return
+
         if not self._client.wait_for_service(timeout_sec=self._timeout_sec):
-            self._node.get_logger().warn(
+            item = self._queue.pop(0)
+            message = (
                 f"Manifest service {self._service_name} not available "
                 f"after {self._timeout_sec}s"
             )
-            return False
-        
+            self._node.get_logger().warn(message)
+            cb = item.get("on_response")
+            if cb:
+                self._safe_invoke_callback(cb, False, message, "")
+            # Try next queued request, if any.
+            self._drain_queue()
+            return
+
+        item = self._queue[0]
         request = UpdateManifest.Request()
-        request.operation = operation
-        request.json_payload = json.dumps(payload, ensure_ascii=False)
-        
+        request.operation = str(item.get("operation") or "")
+        request.json_payload = json.dumps(item.get("payload"), ensure_ascii=False)
+
+        self._in_flight = True
         future = self._client.call_async(request)
-        
-        if on_response:
-            future.add_done_callback(
-                lambda f: self._handle_response(f, on_response)
-            )
-        else:
-            future.add_done_callback(self._default_response_handler)
-        
+        future.add_done_callback(self._on_request_done)
+
         self._node.get_logger().info(
-            f"Sent manifest {operation} request"
+            f"Sent manifest {request.operation} request"
         )
-        return True
+
+    def _on_request_done(self, future: Any) -> None:
+        item = self._queue.pop(0) if self._queue else None
+        self._in_flight = False
+
+        callback = item.get("on_response") if isinstance(item, dict) else None
+        if callback:
+            self._handle_response(future, callback)
+        else:
+            self._default_response_handler(future)
+
+        # Preserve strict request ordering: send next only after prior response.
+        self._drain_queue()
     
     def _handle_response(
         self,
@@ -189,4 +229,18 @@ class ManifestClient:
         except Exception as e:
             self._node.get_logger().error(
                 f"Error sending manifest: {e}"
+            )
+
+    def _safe_invoke_callback(
+        self,
+        callback: Callable[[bool, str, str], None],
+        success: bool,
+        message: str,
+        manifest_hash: str,
+    ) -> None:
+        try:
+            callback(success, message, manifest_hash)
+        except Exception as exc:
+            self._node.get_logger().error(
+                f"Error in manifest response callback: {exc}"
             )

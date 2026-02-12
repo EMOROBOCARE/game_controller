@@ -1,0 +1,65 @@
+# ¿Dónde está? - Location/spatial recognition game
+slug: donde_esta
+title: "¿Dónde está?"
+image: assets/donde_esta.png
+intro: "Vamos a jugar a dónde está."
+
+correct_effects:
+  - confetti
+  - sparkles
+  - emoji
+
+positive_feedback:
+  - "¡Genial! Está en {expr}"
+  - "¡Muy bien! Está en {expr}"
+  - "¡Perfecto! Está en {expr}"
+
+hint_timeout: 8
+
+supportedPhases:
+  - P1
+  - P2
+  - P3
+  - P4
+  - P5
+  - P6
+
+difficulties:
+  basic:
+    level: basic
+    optionsCount: 2
+  intermediate:
+    level: intermediate
+    optionsCount: 3
+  advanced:
+    level: advanced
+    optionsCount: 4
+
+answerType: locations
+
+phaseConfig:
+  P1:
+    text_instructions: "Une cada objeto con su lugar."
+    verbal_instructions: "Une cada objeto con su lugar."
+    prompt: "¿Dónde está {objeto}?"
+  P2:
+    text_instructions: "Repite dónde está el objeto."
+    verbal_instructions: "Repite dónde está el objeto."
+    prompt: "¿Dónde está {objeto}? Está en {lugar}."
+  P3:
+    text_instructions: "Señala dónde está el objeto."
+    verbal_instructions: "Señala dónde está el objeto."
+    prompt: "¿Dónde está {objeto}?"
+  P4:
+    text_instructions: "Responde sí o no a las preguntas."
+    verbal_instructions: "Responde sí o no a las preguntas."
+    prompt: "¿Está {objeto} en {lugar}?"
+  P5:
+    text_instructions: "Dime qué lugar quieres señalar."
+    verbal_instructions: "Dime qué lugar quieres señalar."
+    prompt: "¿Dónde está?"
+    successResponse: "Aquííí"
+  P6:
+    text_instructions: "¿Cuál es el lugar correcto?"
+    verbal_instructions: "¿Cuál es el lugar correcto?"
+    prompt: "¿Está en {option1} o {option2}?"

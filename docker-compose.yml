@@ -37,6 +37,14 @@ services:
       network: host
     environment:
       ROS_DOMAIN_ID: 0
+      # Shared base where module-federation and shared assets are served.
+      EMOROBCARE_COMPONENTS_BASE_URL: "${EMOROBCARE_COMPONENTS_BASE_URL:-http://localhost:8084/emorobcare-components}"
+      # Project/game image assets derived from the same CDN by default.
+      # Override when deploying project assets elsewhere.
+      EMOROBCARE_PROJECT_ASSET_BASE_URL: "${EMOROBCARE_PROJECT_ASSET_BASE_URL:-http://localhost:8084/emorobcare-components/images}"
+      PROJECT_ASSET_BASE_URL: "${EMOROBCARE_PROJECT_ASSET_BASE_URL:-http://localhost:8084/emorobcare-components/images}"
+      GAME_CONTROLLER_REMOTE_ENTRY_BASE_URL: "${EMOROBCARE_COMPONENTS_BASE_URL:-http://localhost:8084/emorobcare-components}"
+      SHARED_ASSET_BASE_URL: "${EMOROBCARE_COMPONENTS_BASE_URL:-http://localhost:8084/emorobcare-components}"
     volumes:
       # Mount game content for development
       - ./game_controller/games:/ros2_ws/src/game_controller/games:ro
@@ -69,6 +77,32 @@ services:
         condition: service_healthy
     ports:
       - "8092:8080"
+    networks:
+      - rosnet
+
+  # React UI shell
+  web:
+    build:
+      context: ../generic_ui
+      dockerfile: web/Dockerfile
+      network: host
+    depends_on:
+      - backend
+    ports:
+      - "8083:80"
+    networks:
+      - rosnet
+
+  # CDN for emorobcare UI components
+  emorobcare_components_cdn:
+    build:
+      context: ../generic_ui
+      dockerfile: emorobcare_components/Dockerfile
+      network: host
+    depends_on:
+      - web
+    ports:
+      - "8084:80"
     networks:
       - rosnet
 
