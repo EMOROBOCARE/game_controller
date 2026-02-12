@@ -858,8 +858,9 @@ def _answer_type_for_payload(phase: str, question_type: str, options: List[Dict[
     if not options:
         return "none"
     phase_code = str(phase or "").upper()
+    phase_code_alnum = "".join(ch for ch in phase_code if ch.isalnum())
     # P1 is the matching/association phase and should render MatchingPhase.
-    if phase_code in {"P1", "MATCHING", "ASSOCIATION"}:
+    if phase_code_alnum in {"P1", "MATCHING", "ASSOCIATION", "MATCHINGCOMPONENTS"}:
         return "match"
     q_type = str(question_type or "").lower()
     if q_type in {"phase_intro", "phase_complete", "correct", "fail_l1", "fail_l2"}:

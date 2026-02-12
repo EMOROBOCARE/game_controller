@@ -166,6 +166,10 @@ $COMPOSE exec decision_making bash -lc \
 $COMPOSE logs -f game_controller backend emorobcare_components_cdn web
 ```
 
+Expected UI behavior:
+- The first phase (`P1`) is matching mode (`answerType: "match"` / Matching components UI).
+- If `decision_making` omits `phase` in `QUESTION_PRESENT`, `game_controller` reuses the latest phase so P1 still renders matching mode.
+
 ## Package READMEs
 
 - [`game_controller/README.md`](game_controller/README.md)

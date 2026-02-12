@@ -77,6 +77,9 @@ Supported controls:
 - `question: {id,text,img}`
 - `items: [{label,text?,img?,highlighted?}]`
 - `answerType`
+  - `match` for phase `P1` (and aliases like `matchingComponents`)
+  - `button` for selectable non-matching questions
+  - `none` for intro/feedback/non-interactive states
 - `answerOpId`
 - `effect`
 - `pause`

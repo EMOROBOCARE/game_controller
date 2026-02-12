@@ -136,6 +136,28 @@ def test_build_state_based_patches_question_present_p1_uses_match():
     assert answer_type_patch["value"] == "match"
 
 
+def test_build_state_based_patches_question_present_matching_components_alias_uses_match():
+    payload = {
+        "phase": "matchingComponents",
+        "question": {
+            "questionId": 22,
+            "prompt": "Une los colores iguales.",
+            "questionType": "multiple_choice",
+            "options": [
+                {"id": "rojo", "label": "rojo", "imageUrl": "red_circle"},
+                {"id": "azul", "label": "azul", "imageUrl": "blue_circle"},
+            ],
+        },
+    }
+    patches = build_state_based_patches("QUESTION_PRESENT", payload)
+    answer_type_patch = patches[3]
+
+    manifest = build_initial_manifest()
+    game_screen_index = get_instance_index(manifest["instances"], GAME_SCREEN_INSTANCE_ID)
+    assert answer_type_patch["path"] == build_instance_config_path(game_screen_index, "answerType")
+    assert answer_type_patch["value"] == "match"
+
+
 def test_build_state_based_patches_question_present_speech_fallback_options():
     payload = {
         "question": {
