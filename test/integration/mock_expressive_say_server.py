@@ -62,15 +62,20 @@ class MockExpressiveSayServer(Node):
                 self.get_logger().warning(f"Failed writing expressive_say log: {exc}")
 
         feedback = Communication.Feedback()
-        feedback.status = "speaking"
+        if hasattr(feedback, "status"):
+            feedback.status = "speaking"
         goal_handle.publish_feedback(feedback)
 
         time.sleep(self._delay_sec)
 
         goal_handle.succeed()
         result = Communication.Result()
-        result.success = True
-        result.message = "ok"
+        if hasattr(result, "success"):
+            result.success = True
+        if hasattr(result, "message"):
+            result.message = "ok"
+        if hasattr(result, "text"):
+            result.text = str(text)
         return result
 
 

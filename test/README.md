@@ -12,7 +12,7 @@ Pure function tests with no ROS dependencies.
 **Run:**
 ```bash
 cd game_controller
-python3 -m pytest test/test_correctness.py test/test_v2_builder.py -v
+python3 -m pytest test/test_correctness.py test/test_builder.py -v
 ```
 
 **Tests:**
@@ -103,7 +103,27 @@ ls -la ../ui_developer_manifests/colores_full_game/
 
 **Details:** See `test/integration/README_COLORES_SIM.md` for complete documentation.
 
-### 5. E2E Tests
+### 5. Headless DM/Manifest Integration (GC_DM)
+
+**Purpose:** Validate `game_controller` → `decision_making` → `generic_ui` interactions without local UI browser/runtime.
+
+**Location:** `test/integration/run_gc_dm_manifest_integration.py`
+
+**Run:**
+
+```bash
+docker compose -f docker-compose.gc_dm_integration.yml up --build --abort-on-container-exit
+```
+
+**Behavior:**
+
+- Starts `game_controller` and required dependencies in `ROS_DOMAIN_ID=43` by default.
+- Executes scripted manifest/state transitions and records assertions.
+- Produces artifacts under `test/results/` (JSONL logs and summary reports).
+
+**Artifacts:** `manifest_log.jsonl`, `decision_state_log.jsonl`, `decision_event_log.jsonl`, `topic_audit_log.jsonl`, `report.md`, `report.json`
+
+### 6. E2E Tests
 Full system tests using docker exec for ROS interaction.
 
 **Location:** `test/e2e/test_*.py`

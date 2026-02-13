@@ -13,6 +13,7 @@
   <depend>std_srvs</depend>
   <depend>generic_ui_interfaces</depend>
   <depend>hri_actions_msgs</depend>
+  <depend>audio_tts_msgs</depend>
 
   <test_depend>ament_lint_auto</test_depend>
   <test_depend>ament_lint_common</test_depend>

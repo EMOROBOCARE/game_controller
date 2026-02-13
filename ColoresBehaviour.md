@@ -1,4 +1,11 @@
 # New refactor:
+
+> Legacy document note:
+> This file contains historical notes and example payloads. It references legacy topic names (`/emorobcare/*`) and component shapes that are not the default in the current runtime.
+> Current runtime defaults:
+> - `/game/user_selector` and `/game/game_selector` for game/user selection
+> - `/ui/input` as the UI publish path that is bridged by `communication_hub` to `/intents`
+> - `/volume` for `audio_tts_msgs/action/Communication` intensity feedback
 ## ros2:
 
 ### Topics:
@@ -250,4 +257,3 @@ The child must use speech.
                     "volumeOpId": "game_volume"
                  }
             },
-

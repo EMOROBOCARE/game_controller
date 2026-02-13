@@ -14,8 +14,8 @@ WORKDIR /ros2_ws/src
 
 # Interfaces required by the harness (GetManifest + Intent).
 COPY generic_ui/ros2/generic_ui_interfaces /ros2_ws/src/generic_ui_interfaces
-COPY refactored_game/extra_ros2_packages/hri_actions_msgs /ros2_ws/src/hri_actions_msgs
-COPY refactored_game/extra_ros2_packages/audio_tts_msgs /ros2_ws/src/audio_tts_msgs
+COPY game_controller/hri_actions_msgs /ros2_ws/src/hri_actions_msgs
+COPY game_controller/audio_tts_msgs /ros2_ws/src/audio_tts_msgs
 
 WORKDIR /ros2_ws
 RUN . /opt/ros/humble/setup.sh && \

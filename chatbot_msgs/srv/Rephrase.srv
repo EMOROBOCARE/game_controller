@@ -1,0 +1,10 @@
+# Request
+string sentence
+string[] forbidden_expressions
+int32 n_alternatives
+string compute_level  # Must be 'low' or 'mid'
+---
+# Response
+string[] alternatives
+bool success
+string message

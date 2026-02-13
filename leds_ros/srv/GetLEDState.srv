@@ -1,0 +1,9 @@
+bool get_colors
+---
+bool success
+string message
+int32 num_leds
+bool is_fading
+int32[] current_r
+int32[] current_g
+int32[] current_b

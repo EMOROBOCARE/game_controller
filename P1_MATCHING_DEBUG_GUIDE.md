@@ -553,15 +553,15 @@ This is the critical path that was broken and is now fixed.
 | File | Location | Purpose |
 |------|----------|---------|
 | `ui_intent_bridge.py` | `communication_hub/communication_hub/` | `/ui/input` → `/intents` bridge |
-| `node.py` | `game_controller/game_controller/game_controller/` | Main orchestration node |
-| `input_translation.py` | `game_controller/game_controller/game_controller/` | Input→event translation + state gating |
-| `decision_events.py` | `game_controller/game_controller/game_controller/` | Event payload builders |
-| `manifest_builder.py` | `game_controller/game_controller/game_controller/ui/` | UI manifest JSON patches |
-| `manifest_client.py` | `game_controller/game_controller/game_controller/ui/` | ROS service client for manifest updates |
-| `builder.py` | `game_controller/game_controller/game_controller/content/` | GAME_INIT payload construction |
-| `loaders.py` | `game_controller/game_controller/game_controller/content/` | Game JSON/YAML file loading |
-| `correctness.py` | `game_controller/game_controller/game_controller/content/` | Answer correctness computation |
-| `auto_advance.py` | `game_controller/game_controller/game_controller/` | Timer-based ON_COMPLETE scheduling |
+| `node.py` | `game_controller/` | Main orchestration node |
+| `input_translation.py` | `game_controller/` | Input→event translation + state gating |
+| `decision_events.py` | `game_controller/` | Event payload builders |
+| `manifest_builder.py` | `game_controller/ui/` | UI manifest JSON patches |
+| `manifest_client.py` | `game_controller/ui/` | ROS service client for manifest updates |
+| `builder.py` | `game_controller/content/` | GAME_INIT payload construction |
+| `loaders.py` | `game_controller/content/` | Game JSON/YAML file loading |
+| `correctness.py` | `game_controller/content/` | Answer correctness computation |
+| `auto_advance.py` | `game_controller/` | Timer-based ON_COMPLETE scheduling |
 | `operations.py` | `generic_ui/backend/gateway/ui_gateway/ros/` | Gateway ROS publisher (publishes /ui/input) |
 
 ---

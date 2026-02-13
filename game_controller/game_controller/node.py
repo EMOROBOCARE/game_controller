@@ -15,6 +15,8 @@ import json
 import os
 import random
 import time
+import uuid
+import threading
 from typing import Any, Dict, List, Optional, Set
 
 import rclpy
@@ -39,9 +41,11 @@ from .content.loaders import load_game_content
 from .content.loaders import get_all_games_metadata
 from .content.builder import build_game_init_payload
 from .content.correctness import compute_correct_for_question, normalize_text
+from .persistence import GameControllerPersistence
 from .ui.manifest_builder import (
     CONTROLS_PAUSED,
     CONTROLS_PLAYING,
+    DEFAULT_USERS,
     DEFAULT_GAME_SCREEN_INDEX,
     GAME_SCREEN_INSTANCE_ID,
     build_game_screen_answer_type_patch,
@@ -103,10 +107,12 @@ class GameControllerNode(Node):
         # Selected game/user
         self._selected_game: Optional[str] = None
         self._selected_user: Optional[int] = None
+        self._selected_child_id: Optional[str] = None
         self._selected_phases: Optional[List[str]] = None
         self._selected_difficulty_override: Optional[str] = None
         self._selected_rounds_per_phase_override: Optional[int] = None
         self._selected_question_idx: Optional[int] = None
+        self._session_uuid_by_id: Dict[int, uuid.UUID] = {}
         # Gate session starts so user selection alone doesn't auto-start a stale game.
         self._start_requested: bool = False
 
@@ -119,6 +125,11 @@ class GameControllerNode(Node):
         self._startup_idle_reset_requested: bool = False
         
         # Loaded game content
+        self._persistence = GameControllerPersistence(self.get_logger())
+        self._manifest_users: List[Dict[str, Any]] = []
+        self._user_index_to_child_id: Dict[int, str] = {}
+        self._child_id_to_user_index: Dict[str, int] = {}
+        self._load_users_from_db()
         self._game_content_cache: Dict[str, Dict[str, Any]] = {}
         self._games_metadata: List[Dict[str, Any]] = get_all_games_metadata()
         self._game_screen_config_cache: Dict[str, Any] = build_selector_config(games=self._games_metadata)
@@ -147,11 +158,16 @@ class GameControllerNode(Node):
         auto_config = AutoAdvanceConfig.from_dict(
             self._get_param_dict("auto_advance")
         )
+        self._auto_advance_config = auto_config
         self._auto_scheduler = AutoAdvanceScheduler(
             auto_config,
             self._on_auto_advance,
             logger=self.get_logger(),
         )
+
+        # Timers/state for speech-gated transitions and hint nudges.
+        self._speech_state_by_tx: Dict[int, str] = {}
+        self._pending_p5_hint_timers: Dict[int, threading.Timer] = {}
 
         # Expressive TTS: in QUESTION_PRESENT, advance only after expressive_say completes.
         self._tts_enabled = bool(self.get_parameter("tts.enabled").value)
@@ -174,14 +190,12 @@ class GameControllerNode(Node):
             )
 
             def _on_speech_complete(tx_id: int) -> None:
-                # Avoid emitting stale ON_COMPLETE events if the system already moved on.
-                if int(tx_id) != int(self._latest_transaction_id or 0):
-                    self.get_logger().debug(
-                        f"Ignoring speech completion for stale tx={tx_id} "
-                        f"(current tx={self._latest_transaction_id})"
-                    )
-                    return
-                self._on_auto_advance(int(tx_id))
+                speech_state = self._speech_state_by_tx.get(int(tx_id))
+                self._speech_state_by_tx.pop(int(tx_id), None)
+                self._schedule_state_auto_advance(
+                    int(tx_id),
+                    expected_state=speech_state,
+                )
 
             self._speech_gate = SpeechGate(
                 speak=self._tts_client.speak,
@@ -262,6 +276,7 @@ class GameControllerNode(Node):
         self.declare_parameter("auto_advance.fail_l1", 2.0)
         self.declare_parameter("auto_advance.fail_l2", 2.0)
         self.declare_parameter("auto_advance.correct", 0.6)
+        self.declare_parameter("auto_advance.correct_min_display", 3.0)
         self.declare_parameter("auto_advance.correct_p1", 3.0)
         self.declare_parameter("auto_advance.phase_complete", 0.3)
 
@@ -367,7 +382,10 @@ class GameControllerNode(Node):
         if self._manifest_seed_in_flight:
             return
 
-        manifest = build_initial_manifest(games=self._games_metadata)
+        manifest = build_initial_manifest(
+            games=self._games_metadata,
+            users=self._manifest_users,
+        )
         self._manifest_snapshot = copy.deepcopy(manifest)
         self._write_manifest_snapshot(reason="set:prepared", manifest_hash="")
         self._refresh_instance_indices(manifest)
@@ -399,12 +417,165 @@ class GameControllerNode(Node):
             f"tx={payload.get('transactionId', '?')}, "
             f"value={payload.get('value', '-')}, correct={payload.get('correct', '?')}"
         )
+        if str(event_type or "").upper().strip() == "USER_INTENT":
+            self._persist_user_intent(payload)
     
     def _publish_current_user(self, user_id: int) -> None:
         """Publish current user ID."""
         msg = Int16()
         msg.data = user_id
         self._current_user_pub.publish(msg)
+
+    def _load_users_from_db(self) -> None:
+        """Load users from DB and adapt them to UserPanel config shape."""
+        db_children = self._persistence.load_children()
+        users: List[Dict[str, Any]] = []
+        self._user_index_to_child_id.clear()
+        self._child_id_to_user_index.clear()
+
+        if db_children:
+            for idx, (child_id, child_name) in enumerate(db_children, start=1):
+                user_id = str(idx)
+                users.append(
+                    {
+                        "id": user_id,
+                        "name": str(child_name or child_id),
+                        "dbId": str(child_id),
+                    }
+                )
+                self._user_index_to_child_id[idx] = str(child_id)
+                self._child_id_to_user_index[str(child_id)] = idx
+            self.get_logger().info(f"[GC][DB] Loaded {len(users)} users from children table")
+        else:
+            users = list(DEFAULT_USERS)
+            for fallback in users:
+                try:
+                    idx = int(str(fallback.get("id", "0")).strip())
+                except ValueError:
+                    continue
+                child_id = f"child-{idx:03d}"
+                self._user_index_to_child_id[idx] = child_id
+                self._child_id_to_user_index[child_id] = idx
+            self.get_logger().warn(
+                "[GC][DB] Using fallback users (DB unavailable or empty children table)"
+            )
+
+        self._manifest_users = users
+
+    def _resolve_user_selection(self, raw_selection: Any) -> Optional[int]:
+        """Resolve UI user selection to local numeric user index."""
+        if raw_selection is None:
+            return None
+        token = str(raw_selection).strip()
+        if not token:
+            return None
+
+        # Direct numeric index from UI payload.
+        try:
+            idx = int(token)
+            if idx in self._user_index_to_child_id:
+                return idx
+        except ValueError:
+            pass
+
+        # DB child id selection.
+        if token in self._child_id_to_user_index:
+            return self._child_id_to_user_index[token]
+
+        # Name-based fallback.
+        lowered = token.lower()
+        for user in self._manifest_users:
+            if str(user.get("name", "")).strip().lower() == lowered:
+                user_id = str(user.get("id", "")).strip()
+                try:
+                    idx = int(user_id)
+                except ValueError:
+                    continue
+                if idx in self._user_index_to_child_id:
+                    return idx
+        return None
+
+    def _session_uuid_for(self, session_id: int) -> uuid.UUID:
+        existing = self._session_uuid_by_id.get(int(session_id))
+        if existing is not None:
+            return existing
+        generated = uuid.uuid4()
+        self._session_uuid_by_id[int(session_id)] = generated
+        return generated
+
+    def _persist_user_intent(self, payload: Dict[str, Any]) -> None:
+        """Persist child answer intents into interaction_logs."""
+        if not self._persistence.enabled:
+            return
+        if not isinstance(payload, dict):
+            return
+
+        active_session = int(self._active_session_id or 0)
+        if active_session <= 0:
+            return
+
+        current_question = (
+            self._latest_question_payload
+            if isinstance(self._latest_question_payload, dict)
+            else {}
+        )
+        question_number_raw = (
+            payload.get("questionId")
+            or current_question.get("questionId")
+            or current_question.get("id")
+            or self._current_round_id
+            or 0
+        )
+        try:
+            question_number = int(question_number_raw)
+        except (TypeError, ValueError):
+            question_number = 0
+
+        is_correct_value = payload.get("correct")
+        is_correct: Optional[bool]
+        if isinstance(is_correct_value, bool):
+            is_correct = is_correct_value
+        else:
+            is_correct = None
+
+        classification = None
+        if is_correct is True:
+            classification = "correct"
+        elif is_correct is False:
+            classification = "incorrect"
+
+        raw_input_value = (
+            payload.get("value")
+            or payload.get("label")
+            or payload.get("answer")
+            or ""
+        )
+        raw_input = str(raw_input_value).strip() if raw_input_value is not None else None
+
+        failure_level: Optional[int] = None
+        game_state_upper = str(self._ui_translator._current_game_state or "").upper().strip()
+        if game_state_upper == "FAIL_L1":
+            failure_level = 1
+        elif game_state_upper == "FAIL_L2":
+            failure_level = 2
+
+        session_uuid = self._session_uuid_for(active_session)
+        self._persistence.insert_interaction_log(
+            session_uuid=session_uuid,
+            child_id=self._selected_child_id,
+            game_slug=str(self._active_game_slug or self._selected_game or "unknown"),
+            question_number=max(0, question_number),
+            phase_code=str(self._current_phase or "") or None,
+            difficulty_code=str(self._current_difficulty or "") or None,
+            input_type=str(payload.get("inputType") or "") or None,
+            raw_input=raw_input or None,
+            is_correct=is_correct,
+            classification=classification,
+            feedback=None,
+            hint_level=None,
+            duration_seconds=None,
+            failure_level=failure_level,
+        )
     
     # -------------------- Callbacks --------------------
     
@@ -464,6 +635,7 @@ class GameControllerNode(Node):
             self._current_question_cache.clear()
             self._round_id_to_phase.clear()
             self._question_id_to_phase.clear()
+            self._session_uuid_by_id.clear()
             self._recent_input_fingerprints.clear()
             self._reset_p1_match_tracking()
             self._start_requested = False
@@ -522,11 +694,18 @@ class GameControllerNode(Node):
             f"tx={transaction_id}, session={session_id}, phase={self._current_phase}"
         )
 
+        game_state_upper = str(game_state or "").upper().strip()
+        if game_state_upper != "WAIT_INPUT":
+            self._cancel_all_p5_hint_timers()
+        elif str(self._current_phase or "").upper().strip() != "P5":
+            self._cancel_all_p5_hint_timers(preserve_tx=int(transaction_id or 0))
+        else:
+            self._maybe_schedule_p5_hint_timer(int(transaction_id or 0), payload)
+
         # Schedule completion:
         # - QUESTION_PRESENT / CORRECT can gate ON_COMPLETE on expressive speech completion
         # - PHASE_INTRO is configured to auto-skip (timeout 0 by default)
         # - other states keep time-based auto-advance behavior
-        game_state_upper = str(game_state or "").upper().strip()
         if game_state_upper in {"FAIL_L1", "FAIL_L2"}:
             self._enrich_failure_payload(payload, game_state_upper)
         if game_state_upper == "CORRECT" and not payload.get("feedback"):
@@ -539,7 +718,16 @@ class GameControllerNode(Node):
             )
             if not handled:
                 auto_state = self._auto_advance_state_key(game_state_upper, payload)
-                self._auto_scheduler.schedule_if_needed(auto_state, transaction_id)
+                if auto_state == "CORRECT":
+                    timeout = self._auto_advance_config.correct
+                    timeout = max(timeout, self._auto_advance_config.correct_min_display)
+                    self._auto_scheduler.schedule_if_needed(
+                        auto_state,
+                        transaction_id,
+                        timeout_override=timeout,
+                    )
+                else:
+                    self._auto_scheduler.schedule_if_needed(auto_state, transaction_id)
         
         # Patch UI based on state.
         state_based_patches = self._patch_ui_for_state(game_state, payload)
@@ -596,8 +784,9 @@ class GameControllerNode(Node):
     
     def _on_intent(self, msg: Intent) -> None:
         """Handle input from /intents topic."""
+        intent_value = getattr(msg, "intent", "")
         self.get_logger().debug(
-            f"[GC] /intents received: intent={msg.intent}, modality={msg.modality}, data={msg.data}"
+            f"[GC] /intents received: intent={intent_value}, modality={msg.modality}, data={msg.data}"
         )
         input_data = self._parse_intent_input_data(msg)
         if input_data is None:
@@ -643,6 +832,12 @@ class GameControllerNode(Node):
             f"game_state={getattr(self._ui_translator, '_current_game_state', '?')}, "
             f"tx={self._latest_transaction_id}, phase={self._current_phase})"
         )
+        if not self._is_modality_allowed_for_phase(input_data, modality):
+            self.get_logger().info(
+                f"[GC] Discarded input from {source}: modality={modality} "
+                f"not allowed for phase={self._current_phase}"
+            )
+            return
         if self._handle_p1_matching_input(input_data, modality):
             return
         if self._should_semantic_evaluate(input_data, modality):
@@ -657,6 +852,10 @@ class GameControllerNode(Node):
         input_data: Dict[str, Any],
         modality: str,
     ) -> None:
+        current_state_upper = str(getattr(self._ui_translator, "_current_game_state", "")).upper().strip()
+        if current_state_upper == "WAIT_INPUT" and str(self._current_phase or "").upper().strip() == "P5":
+            self._cancel_all_p5_hint_timers(int(self._latest_transaction_id or 0))
+
         event = self._ui_translator.translate_input_data(
             input_data,
             modality=modality,
@@ -801,6 +1000,15 @@ class GameControllerNode(Node):
             "SKIP",
         }
 
+    def _is_modality_allowed_for_phase(self, input_data: Dict[str, Any], modality: str) -> bool:
+        """Gate answer inputs by phase modality while always allowing controls."""
+        if self._is_control_input(input_data):
+            return True
+        phase_code = str(self._current_phase or "").strip().upper()
+        if phase_code == "P2":
+            return modality == "speech"
+        return True
+
     def _looks_like_matching_input(self, input_data: Dict[str, Any]) -> bool:
         if not isinstance(input_data, dict):
             return False
@@ -816,8 +1024,6 @@ class GameControllerNode(Node):
                 "completed",
                 "isComplete",
             )
-        ) or (
-            "correct" in input_data and input_data.get("correct") is not None
         )
 
     def _coerce_optional_bool(self, value: Any) -> Optional[bool]:
@@ -833,6 +1039,20 @@ class GameControllerNode(Node):
         if text in {"false", "0", "no"}:
             return False
         return None
+
+    def _as_bool(self, value: Any, default: bool = False) -> bool:
+        if isinstance(value, bool):
+            return value
+        if isinstance(value, (int, float)):
+            return bool(value)
+        text = str(value or "").strip().lower()
+        if not text:
+            return default
+        if text in {"true", "1", "yes", "si", "sí", "on"}:
+            return True
+        if text in {"false", "0", "no", "off"}:
+            return False
+        return default
 
     def _resolve_match_correctness(self, input_data: Dict[str, Any]) -> Optional[bool]:
         explicit = self._coerce_optional_bool(input_data.get("correct"))
@@ -1065,6 +1285,158 @@ class GameControllerNode(Node):
             done=_done,
         )
 
+    def _p5_hint_timeout_seconds(self) -> float:
+        """Return seconds to wait before giving P5 hints."""
+        game_content = self._game_content_for_active_session()
+        hint_timeout = game_content.get("hint_timeout", 5)
+        try:
+            seconds = float(hint_timeout)
+        except (TypeError, ValueError):
+            return 5.0
+        if seconds <= 0.0:
+            return 5.0
+        return seconds
+
+    def _extract_expected_question(self, question_payload: Dict[str, Any]) -> str:
+        if not isinstance(question_payload, dict):
+            return ""
+
+        expected_question = question_payload.get("expected_question")
+        if expected_question is None:
+            expected_question = question_payload.get("expectedQuestion")
+        if expected_question:
+            text = str(expected_question).strip()
+            if text:
+                return text
+
+        phase_code = str(self._current_phase or "").strip().upper()
+        if not phase_code:
+            return ""
+
+        game_content = self._game_content_for_active_session()
+        phase_config = game_content.get("phaseConfig")
+        if not isinstance(phase_config, dict):
+            return ""
+
+        phase_data = phase_config.get(phase_code)
+        if not isinstance(phase_data, dict):
+            return ""
+
+        for key in ("expected_question", "expectedQuestion"):
+            candidate = phase_data.get(key)
+            if candidate is not None:
+                text = str(candidate).strip()
+                if text:
+                    return text
+        return ""
+
+    def _p5_hint_prompt(self, expected_question: str) -> str:
+        child_id = self._selected_child_id
+        if not child_id:
+            return str(expected_question).strip() or "¿Dónde está el?"
+
+        game_slug = str(self._active_game_slug or self._selected_game or "unknown")
+        use_short_prompt = False
+        count = self._persistence.get_child_phase_hint_count(
+            child_id=child_id,
+            game_slug=game_slug,
+            phase_code="P5",
+        )
+        if count > 0:
+            use_short_prompt = True
+
+        if use_short_prompt:
+            return "¿Donde está el?"
+
+        return str(expected_question).strip() or "¿Donde está el?"
+
+    def _record_p5_hint_hint(self) -> None:
+        child_id = self._selected_child_id
+        if not child_id:
+            return
+        game_slug = str(self._active_game_slug or self._selected_game or "unknown")
+        self._persistence.record_child_phase_hint_usage(
+            child_id=child_id,
+            game_slug=game_slug,
+            phase_code="P5",
+        )
+
+    def _is_waiting_p5(self, transaction_id: int) -> bool:
+        if int(transaction_id) != int(self._latest_transaction_id or 0):
+            return False
+        if str(self._current_phase or "").strip().upper() != "P5":
+            return False
+        current_state = str(getattr(self._ui_translator, "_current_game_state", "") or "").upper()
+        return current_state == "WAIT_INPUT"
+
+    def _cancel_all_p5_hint_timers(self, preserve_tx: Optional[int] = None) -> None:
+        for tx, timer in list(self._pending_p5_hint_timers.items()):
+            if preserve_tx is not None and tx == int(preserve_tx):
+                continue
+            timer.cancel()
+            self._pending_p5_hint_timers.pop(tx, None)
+
+    def _maybe_schedule_p5_hint_timer(
+        self,
+        transaction_id: int,
+        payload: Dict[str, Any],
+    ) -> None:
+        tx = int(transaction_id)
+        if tx <= 0:
+            return
+
+        if tx in self._pending_p5_hint_timers:
+            return
+
+        if not self._is_waiting_p5(tx):
+            return
+
+        timeout = self._p5_hint_timeout_seconds()
+        if timeout <= 0.0:
+            return
+
+        question = payload.get("question")
+        if not isinstance(question, dict):
+            question = self._latest_question_payload
+
+        expected_question = self._extract_expected_question(question or {})
+        if not expected_question:
+            return
+
+        timer = threading.Timer(
+            timeout,
+            self._on_p5_hint_timeout,
+            args=(tx, expected_question),
+        )
+        timer.daemon = True
+        self._pending_p5_hint_timers[tx] = timer
+        timer.start()
+
+    def _on_p5_hint_timeout(self, transaction_id: int, expected_question: str) -> None:
+        tx = int(transaction_id)
+        self._pending_p5_hint_timers.pop(tx, None)
+
+        if not self._is_waiting_p5(tx):
+            return
+
+        phrase = self._p5_hint_prompt(expected_question)
+        if not phrase:
+            return
+
+        self._record_p5_hint_hint()
+
+        if self._tts_client is not None and self._tts_enabled:
+            try:
+                self._tts_client.speak(phrase, self._tts_language, lambda _success: None)
+            except Exception as exc:
+                self._logger.error(f"Failed to speak P5 hint for tx={tx}: {exc}")
+        else:
+            self._logger.debug("Skipping P5 hint speech: TTS disabled/unavailable")
+
+        # Keep reminding if no answer yet.
+        if self._is_waiting_p5(tx):
+            self._maybe_schedule_p5_hint_timer(tx, {"question": {"expected_question": expected_question}})
+
     def _is_duplicate_input(self, input_data: Dict[str, Any], modality: str) -> bool:
         """Best-effort de-duplication across /ui/input and /intents sources."""
         if self._input_dedupe_window_sec <= 0.0:
@@ -1262,27 +1634,37 @@ class GameControllerNode(Node):
         """Handle user selection."""
         parsed = self._try_parse_json(msg.data)
 
-        user_id = 1
+        raw_user: Any = None
         if isinstance(parsed, dict):
             user_info = parsed.get("user")
             if isinstance(user_info, dict):
-                raw_id = user_info.get("id")
+                raw_user = (
+                    user_info.get("id")
+                    or user_info.get("userId")
+                    or user_info.get("name")
+                )
             else:
-                raw_id = parsed.get("userId") or parsed.get("id") or parsed.get("user_id")
-            try:
-                user_id = int(str(raw_id).strip())
-            except (TypeError, ValueError):
-                user_id = 1
+                raw_user = (
+                    parsed.get("userId")
+                    or parsed.get("id")
+                    or parsed.get("user_id")
+                    or parsed.get("name")
+                )
         else:
-            try:
-                user_id = int(msg.data.strip())
-            except ValueError:
-                # Might be a username, use 1 as default
-                user_id = 1
-        
-        self.get_logger().info(f"User selected: {user_id}")
-        
+            raw_user = msg.data.strip()
+
+        user_id = self._resolve_user_selection(raw_user)
+        if user_id is None:
+            user_id = 1
+
+        child_id = self._user_index_to_child_id.get(user_id)
+        if child_id is None:
+            child_id = f"child-{user_id:03d}"
+
+        self.get_logger().info(f"User selected: ui_id={user_id}, child_id={child_id}")
+
         self._selected_user = user_id
+        self._selected_child_id = child_id
         self._publish_current_user(user_id)
         
         # Start only if a game selection was explicitly requested.
@@ -1291,9 +1673,53 @@ class GameControllerNode(Node):
     
     def _on_auto_advance(self, transaction_id: int) -> None:
         """Callback for auto-advance timer."""
+        if int(transaction_id) != int(self._latest_transaction_id or 0):
+            self.get_logger().debug(
+                f"Ignoring stale auto-advance for tx={transaction_id} "
+                f"(current tx={self._latest_transaction_id})"
+            )
+            return
         # Publish ON_COMPLETE event
         event = build_on_complete_event(transaction_id)
         self._publish_event(event)
+
+    def _schedule_state_auto_advance(
+        self,
+        transaction_id: int,
+        expected_state: Optional[str] = None,
+    ) -> None:
+        if int(transaction_id) != int(self._latest_transaction_id or 0):
+            self.get_logger().debug(
+                f"Ignoring state-completion request for stale tx={transaction_id} "
+                f"(current tx={self._latest_transaction_id})"
+            )
+            return
+
+        if expected_state == "CORRECT":
+            elapsed = 0.0
+            if self._speech_gate is not None:
+                started_at = self._speech_gate.get_started_at(int(transaction_id))
+                if started_at is not None:
+                    elapsed = time.monotonic() - started_at
+            remaining = max(0.0, self._auto_advance_config.correct_min_display - elapsed)
+            if remaining <= 0.0:
+                self._on_auto_advance(int(transaction_id))
+                return
+
+            timer = threading.Timer(
+                remaining,
+                self._on_auto_advance,
+                args=(int(transaction_id),),
+            )
+            timer.daemon = True
+            timer.start()
+            self.get_logger().debug(
+                f"Delaying CORRECT auto-advance for tx={transaction_id} "
+                f"(speech took {elapsed:.2f}s, remaining {remaining:.2f}s)"
+            )
+            return
+
+        self._on_auto_advance(int(transaction_id))
     
     # -------------------- Game Logic --------------------
     
@@ -1342,6 +1768,7 @@ class GameControllerNode(Node):
         # Generate session ID
         self._session_counter += 1
         session_id = self._session_counter
+        self._session_uuid_by_id[session_id] = uuid.uuid4()
         
         # Build GAME_INIT payload
         payload = build_game_init_payload(
@@ -1401,12 +1828,32 @@ class GameControllerNode(Node):
         if transaction_id <= 0:
             return False
 
+        tx = int(transaction_id)
+        self._speech_state_by_tx.pop(tx, None)
+
         if game_state_upper == "PHASE_INTRO":
             return False
 
         if game_state_upper == "QUESTION_PRESENT":
             question_payload = payload.get("question")
-            question = question_payload if isinstance(question_payload, dict) else {}
+            question = (
+                question_payload
+                if isinstance(question_payload, dict)
+                else self._latest_question_payload
+                if isinstance(self._latest_question_payload, dict)
+                else {}
+            )
+            say_prompt = question.get("say_prompt")
+            if say_prompt is None:
+                say_prompt = question.get("sayPrompt")
+            if isinstance(say_prompt, bool):
+                if not say_prompt:
+                    return False
+            elif say_prompt is not None:
+                say_prompt_value = self._as_bool(say_prompt, default=True)
+                if not say_prompt_value:
+                    return False
+
             prompt = str(
                 question.get("promptVerbal")
                 or question.get("prompt")
@@ -1416,12 +1863,16 @@ class GameControllerNode(Node):
             if not prompt:
                 return False
             expected_answer = self._extract_expected_answer(question)
-            return self._speak_with_optional_rephrase(
-                transaction_id=transaction_id,
+            self._speech_state_by_tx[tx] = "QUESTION_PRESENT"
+            if not self._speak_with_optional_rephrase(
+                transaction_id=tx,
                 text=prompt,
                 expected_answer=expected_answer,
                 allow_rephrase=self._tts_rephrase_question_enabled,
-            )
+            ):
+                self._speech_state_by_tx.pop(tx, None)
+                return False
+            return True
 
         if game_state_upper == "CORRECT":
             feedback = str(payload.get("feedback") or "").strip()
@@ -1433,12 +1884,16 @@ class GameControllerNode(Node):
             expected_answer = self._extract_expected_answer(
                 self._latest_question_payload if isinstance(self._latest_question_payload, dict) else {}
             )
-            return self._speak_with_optional_rephrase(
-                transaction_id=transaction_id,
+            self._speech_state_by_tx[tx] = "CORRECT"
+            if not self._speak_with_optional_rephrase(
+                transaction_id=tx,
                 text=feedback,
                 expected_answer=expected_answer,
                 allow_rephrase=self._tts_rephrase_correct_enabled and phase_code != "P1",
-            )
+            ):
+                self._speech_state_by_tx.pop(tx, None)
+                return False
+            return True
 
         if game_state_upper in {"FAIL_L1", "FAIL_L2"}:
             action = self._normalize_hint_action(payload.get("action"))
@@ -1457,12 +1912,16 @@ class GameControllerNode(Node):
                     if correct_text
                     else "Te digo la respuesta correcta."
                 )
-            return self._speak_with_optional_rephrase(
-                transaction_id=transaction_id,
+            self._speech_state_by_tx[tx] = game_state_upper
+            if not self._speak_with_optional_rephrase(
+                transaction_id=tx,
                 text=hint,
                 expected_answer=self._resolve_correct_answer_text(payload.get("correctOptionId")),
                 allow_rephrase=False,
-            )
+            ):
+                self._speech_state_by_tx.pop(tx, None)
+                return False
+            return True
 
         return False
 
@@ -1497,6 +1956,7 @@ class GameControllerNode(Node):
         def _speak_candidate(candidate_text: str) -> None:
             if int(self._latest_transaction_id or 0) != int(transaction_id):
                 return
+            expected_state = self._speech_state_by_tx.get(int(transaction_id))
             started = self._speech_gate.maybe_speak(
                 SpeechRequest(
                     transaction_id=int(transaction_id),
@@ -1505,7 +1965,11 @@ class GameControllerNode(Node):
                 )
             )
             if not started:
-                self._on_auto_advance(int(transaction_id))
+                self._speech_state_by_tx.pop(int(transaction_id), None)
+                self._schedule_state_auto_advance(
+                    int(transaction_id),
+                    expected_state=expected_state,
+                )
 
         def _on_rephrased(rephrased: str) -> None:
             candidate = str(rephrased or "").strip() or cleaned

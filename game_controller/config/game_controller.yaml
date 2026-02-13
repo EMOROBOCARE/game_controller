@@ -28,6 +28,8 @@ auto_advance:
   fail_l1: 2.0
   fail_l2: 2.0
   correct: 0.6
+  correct_min_display: 3.0
+  correct_p1: 3.0
   phase_complete: 0.3
 
 # Chatbot integration

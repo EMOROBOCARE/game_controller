@@ -50,8 +50,8 @@ All executable validation tests passed successfully. Tests requiring pytest were
 
 **Results:**
 - ✓ UserPanel: ./UserPanel
-- ✓ GameScreenComponent: ./GameScreenComponent
-- ✓ Instance: game_screen (GameScreenComponent)
+- ✓ Game components (GameSelector and GameComponent)
+- ✓ Instance: game_screen (GameSelector or GameComponent)
 - ✓ Instance: user_panel (UserPanel)
 - ✓ Operation: game_selector → /game/game_selector
 - ✓ Operation: user_selector → /game/user_selector

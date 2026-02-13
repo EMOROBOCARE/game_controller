@@ -100,6 +100,47 @@ def _safe_format(template: Optional[str], values: Dict[str, Any]) -> str:
     except Exception:
         return str(template)
 
+def _coerce_bool_like(value: Any) -> Optional[bool]:
+    """Coerce common bool-like values used in game config."""
+    if value is None:
+        return None
+    if isinstance(value, bool):
+        return value
+    if isinstance(value, (int, float)):
+        return bool(value)
+    text = str(value).strip().lower()
+    if not text:
+        return None
+    if text in {"true", "1", "yes", "on", "si", "sí"}:
+        return True
+    if text in {"false", "0", "no", "off"}:
+        return False
+    return None
+
+
+def _build_question_payload_flags(phase_cfg: Dict[str, Any]) -> Dict[str, Any]:
+    """Build per-question flags from phase config."""
+    if not isinstance(phase_cfg, dict):
+        return {}
+
+    flags: Dict[str, Any] = {}
+    say_prompt_raw = phase_cfg.get("say_prompt")
+    if say_prompt_raw is None:
+        say_prompt_raw = phase_cfg.get("sayPrompt")
+    say_prompt = _coerce_bool_like(say_prompt_raw)
+    if say_prompt is not None:
+        flags["say_prompt"] = bool(say_prompt)
+
+    expected_question = phase_cfg.get("expected_question")
+    if expected_question is None:
+        expected_question = phase_cfg.get("expectedQuestion")
+    if expected_question is not None:
+        text = str(expected_question).strip()
+        if text:
+            flags["expected_question"] = text
+
+    return flags
+
 
 def _fallback_prompt(phase: str, phase_cfg: Dict[str, Any], values: Dict[str, Any]) -> tuple[str, str]:
     """Return (prompt_text, prompt_verbal) when templates are missing.
@@ -303,15 +344,23 @@ def _generate_rounds_from_answers(
 
             for i in range(max(0, rounds_per_phase)):
                 correct_item = phase_items[i % len(phase_items)]
-                incorrect_candidates = [it for it in all_items if it.get("value") != correct_item.get("value")]
-                incorrect_item = rng.choice(incorrect_candidates) if incorrect_candidates else correct_item
-
+                incorrect_candidates = [
+                    it for it in all_items if it.get("value") != correct_item.get("value")
+                ]
+                incorrect_item = (
+                    rng.choice(incorrect_candidates)
+                    if incorrect_candidates
+                    else correct_item
+                )
                 image_url = correct_item.get("image")
 
                 for kind in list(sequence)[:sub_rounds]:
-                    asked_item = correct_item if str(kind).lower() == "correct" else incorrect_item
+                    asked_item = (
+                        correct_item if str(kind).lower() == "correct" else incorrect_item
+                    )
                     statement_true = asked_item.get("value") == correct_item.get("value")
                     yes_no = "si" if statement_true else "no"
+                    question_flags = _build_question_payload_flags(phase_cfg)
 
                     asked_label = asked_item.get("label", "")
                     determinant, word = _extract_determinant_and_word(asked_label)
@@ -336,30 +385,36 @@ def _generate_rounds_from_answers(
                     prompt_verbal = _safe_format(prompt_verbal_tmpl, values)
                     prompt_text = _safe_format(prompt_text_tmpl, values)
                     if not str(prompt_verbal).strip():
-                        prompt_text, prompt_verbal = _fallback_prompt(phase_upper, phase_cfg, values)
+                        prompt_text, prompt_verbal = _fallback_prompt(
+                            phase_upper,
+                            phase_cfg,
+                            values,
+                        )
                     prompt_text = _compose_instruction_prompt(text_instruction, prompt_text)
                     prompt_verbal = _compose_instruction_prompt(verbal_instruction, prompt_verbal)
                     options = generate_yes_no_options(yes_no)
+                    question_payload = {
+                        "questionId": question_id,
+                        "prompt": prompt_verbal,
+                        "promptText": prompt_text,
+                        "promptVerbal": prompt_verbal,
+                        "imageUrl": image_url,
+                        "answer": yes_no,
+                        "questionType": "yes_no",
+                        "options": options,
+                        "meta": {
+                            "asked": asked_item.get("value", asked_label),
+                            "shown": correct_item.get("value", correct_item.get("label", "")),
+                        },
+                    }
+                    question_payload.update(question_flags)
 
                     rounds.append(
                         {
                             "id": round_id,
                             "phase": phase_upper,
                             "difficulty": difficulty,
-                            "question": {
-                                "questionId": question_id,
-                                "prompt": prompt_verbal,
-                                "promptText": prompt_text,
-                                "promptVerbal": prompt_verbal,
-                                "imageUrl": image_url,
-                                "answer": yes_no,
-                                "questionType": "yes_no",
-                                "options": options,
-                                "meta": {
-                                    "asked": asked_item.get("value", asked_label),
-                                    "shown": correct_item.get("value", correct_item.get("label", "")),
-                                },
-                            },
+                            "question": question_payload,
                         }
                     )
                     round_id += 1
@@ -445,22 +500,26 @@ def _generate_rounds_from_answers(
             prompt_text = _compose_instruction_prompt(text_instruction, prompt_text)
             prompt_verbal = _compose_instruction_prompt(verbal_instruction, prompt_verbal)
 
+            question_flags = _build_question_payload_flags(phase_cfg)
+            question_payload = {
+                "questionId": question_id,
+                "prompt": prompt_verbal,
+                "promptText": prompt_text,
+                "promptVerbal": prompt_verbal,
+                "imageUrl": image_url,
+                "answer": correct_item.get("value", correct_label),
+                "questionType": question_type,
+                "options": options,
+                "meta": {"answerType": answer_type} if answer_type else {},
+            }
+            question_payload.update(question_flags)
+
             rounds.append(
                 {
                     "id": round_id,
                     "phase": phase_upper,
                     "difficulty": difficulty,
-                    "question": {
-                        "questionId": question_id,
-                        "prompt": prompt_verbal,
-                        "promptText": prompt_text,
-                        "promptVerbal": prompt_verbal,
-                        "imageUrl": image_url,
-                        "answer": correct_item.get("value", correct_label),
-                        "questionType": question_type,
-                        "options": options,
-                        "meta": {"answerType": answer_type} if answer_type else {},
-                    },
+                    "question": question_payload,
                 }
             )
 

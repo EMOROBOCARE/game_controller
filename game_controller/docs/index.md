@@ -17,6 +17,8 @@
 For cross-stack payload contracts, use:
 - `INTEGRATION_CONTRACT.md`
 - `UI_integration.md`
+- `REAL_PACKAGE_MIGRATION_DOCUMENTATION.md` and `IMPLEMENTATION_PLAN_REAL_PACKAGES.md` in the workspace root for package-source migration status
+- `GAME_CONTROLLER_PACKAGE_SOURCE_ALIGNMENT.md` for process-level package-path wiring discrepancies
 
 These docs describe package-level behavior. Contract fields and JSON schemas live in `INTEGRATION_CONTRACT.md`.
 
@@ -32,7 +34,7 @@ These docs describe package-level behavior. Contract fields and JSON schemas liv
 ## Key Invariants
 - `transactionId` from `/decision/state` gates `ON_COMPLETE` and `USER_INTENT`.
 - Manifest layout is stable: `UserPanel` is fixed and `game_screen` swaps between `GameSelector` (menu) and `GameComponent` (gameplay).
-- `QUESTION_PRESENT.payload.question.prompt` must be non-empty (used for expressive TTS completion flow).
+- `QUESTION_PRESENT.payload.question.prompt` is read and spoken when present; speech can be disabled per question with `question.say_prompt=false`.
 
 ## Troubleshooting Shortlist
 - Game does not start: verify both user and game selections are published.

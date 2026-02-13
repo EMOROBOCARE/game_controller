@@ -1,0 +1,26 @@
+- main [ref=e5]:
+  - generic [ref=e12]:
+    - heading "EMOROBCARE" [level=1] [ref=e13]
+    - generic [ref=e15] [cursor=pointer]:
+      - img "Icono usuario" [ref=e16]
+      - generic [ref=e17]: Pepe
+      - generic [ref=e18]: ▼
+  - generic [ref=e19]:
+    - heading "Elige un juego" [level=1] [ref=e20]
+    - generic [ref=e22]:
+      - button "Animales" [ref=e24] [cursor=pointer]:
+        - generic [ref=e25]: Animales
+      - button "Atención" [ref=e27] [cursor=pointer]:
+        - generic [ref=e28]: Atención
+      - button "Colores" [ref=e30] [cursor=pointer]:
+        - generic [ref=e31]: Colores
+      - button "¿Dónde está?" [ref=e33] [cursor=pointer]:
+        - generic [ref=e34]: ¿Dónde está?
+      - button "Emociones" [ref=e36] [cursor=pointer]:
+        - generic [ref=e37]: Emociones
+      - button "Encuentra Objetos" [ref=e39] [cursor=pointer]:
+        - generic [ref=e40]: Encuentra Objetos
+      - button "Formas" [ref=e42] [cursor=pointer]:
+        - generic [ref=e43]: Formas
+      - button "Quiero" [ref=e45] [cursor=pointer]:
+        - generic [ref=e46]: Quiero

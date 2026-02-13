@@ -18,7 +18,7 @@ RUN pip3 install --no-cache-dir pytest pytest-timeout
 # Create workspace and copy interfaces for topic types
 WORKDIR /ros2_ws/src
 COPY generic_ui/ros2/generic_ui_interfaces /ros2_ws/src/generic_ui_interfaces
-COPY game_controller/game_controller/stub_hri_actions_msgs /ros2_ws/src/hri_actions_msgs
+COPY game_controller/hri_actions_msgs /ros2_ws/src/hri_actions_msgs
 
 WORKDIR /ros2_ws
 RUN . /opt/ros/humble/setup.sh && \

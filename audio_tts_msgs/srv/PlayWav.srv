@@ -1,0 +1,7 @@
+# Request
+string path
+bool exclusive   # if true, stop any ongoing playback first (optional)
+---
+# Response
+bool success
+string message

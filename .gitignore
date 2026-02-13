@@ -1,2 +1,5 @@
 llm_bridge
 led_ros
+
+# Local ROS2 dependency packages
+communication_hub

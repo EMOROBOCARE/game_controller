@@ -1,0 +1,12 @@
+# Request
+string sentence                 # Optional - use OR messages
+string child_name
+string robot_name
+string compute_level           # Must be 'low' or 'mid'
+string messages                # JSON string: [{"role": "user"/"assistant", "content": "text"}, ...] - Optional
+string topics                  # JSON string: [{"name": "...", "description": "...", "example_sentences": [...], "example_answers": [...]}, ...] - Optional
+---
+# Response
+string robot_response
+bool success
+string message

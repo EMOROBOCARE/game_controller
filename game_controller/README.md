@@ -14,6 +14,14 @@ ROS 2 package that orchestrates Colors/Colores sessions between `decision_making
 
 Game logic transitions remain owned by `decision_making`.
 
+## Dependency Sources (Current Workspace)
+
+- `hri_actions_msgs`, `audio_tts_msgs`, `chatbot_msgs`, `emorobcare_led_service`, and `communication_hub` are mirrored in the parent `game_controller` directory from real `/src` sources.
+- `generic_ui_interfaces` is sourced from `../generic_ui/ros2/generic_ui_interfaces`.
+- Stub packages under `game_controller/stub_*` are reserved for isolated/unit-test flows only.
+- Runtime Dockerfile wiring is aligned to local real mirrors via `game_controller/Dockerfile.compose`.
+- `game_controller/Dockerfile.e2e` currently uses real mirrored `hri_actions_msgs` for compatibility with intent payload typing in this workspace.
+
 ## Runtime Channels
 
 ### Subscribed
@@ -42,8 +50,8 @@ State updates are sent as JSON Patch operations against `game_screen.config`.
 Current flow details:
 - `PHASE_INTRO` is auto-skipped (no separate intro screen)
 - per-phase `text_instructions`/`verbal_instructions` are prepended to each generated question
-- `QUESTION_PRESENT` speech uses `/expressive_say` and can rephrase prompts safely
-- `CORRECT` speech uses game `positive_feedback.fewshot_examples` with optional rephrase
+- `QUESTION_PRESENT` speech uses `/expressive_say` and can rephrase prompts safely; prompts are controlled per question via `say_prompt`.
+- `CORRECT` speech uses game `positive_feedback` samples (via LLM rephrase when enabled), and `ON_COMPLETE` is delayed until feedback is spoken or `auto_advance.correct_min_display` elapses, whichever is longer.
 - `GameComponent.config.volumeOpId` publishes directly to `/volume` (`std_msgs/msg/Float32`)
 
 ## Quick Start

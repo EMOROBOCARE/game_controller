@@ -1,0 +1,15 @@
+# Service for getting current LED state and information
+
+# Request
+bool get_colors          # Request current LED colors
+
+---
+
+# Response
+bool success             # True if successful
+string message           # Status message or error description
+int32 num_leds           # Total number of LEDs
+uint8[] current_r        # Current red values of all LEDs
+uint8[] current_g        # Current green values of all LEDs
+uint8[] current_b        # Current blue values of all LEDs
+bool is_fading           # True if a fade animation is currently running

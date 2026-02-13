@@ -21,7 +21,7 @@ setup(
         ('share/' + package_name + '/games/profiles', glob('games/profiles/*.json')),
         ('share/' + package_name + '/launch', glob('launch/*.py')),
     ],
-    install_requires=['setuptools', 'pyyaml'],
+    install_requires=['setuptools', 'pyyaml', 'flask', 'psycopg2-binary'],
     zip_safe=True,
     maintainer='EMOROBOCARE',
     maintainer_email='emorobcare@example.com',
@@ -31,6 +31,9 @@ setup(
     entry_points={
         'console_scripts': [
             'game_controller_node = game_controller.node:main',
+            'ui_intent_bridge = game_controller.ui_intent_bridge:main',
+            'tts_mock_node = game_controller.tts_mock_node:main',
+            'expressive_say_bridge_mock = game_controller.expressive_say_bridge_mock:main',
         ],
     },
 )

@@ -46,6 +46,12 @@ services:
       PROJECT_ASSET_BASE_URL: "${EMOROBCARE_PROJECT_ASSET_BASE_URL:-http://localhost:8084/emorobcare-components/images}"
       GAME_CONTROLLER_REMOTE_ENTRY_BASE_URL: "${EMOROBCARE_COMPONENTS_BASE_URL:-http://localhost:8084/emorobcare-components}"
       SHARED_ASSET_BASE_URL: "${EMOROBCARE_COMPONENTS_BASE_URL:-http://localhost:8084/emorobcare-components}"
+      GAME_CONTROLLER_DB_ENABLED: "${GAME_CONTROLLER_DB_ENABLED:-1}"
+      POSTGRES_DB: "${POSTGRES_DB:-emorobcare_db}"
+      POSTGRES_USER: "${POSTGRES_USER:-emorobcare}"
+      POSTGRES_PASSWORD: "${POSTGRES_PASSWORD:-D3B3rdad.Emylio}"
+      POSTGRES_HOST: "${POSTGRES_HOST:-10.147.19.11}"
+      POSTGRES_PORT: "${POSTGRES_PORT:-5432}"
     volumes:
       # Mount game content for development
       - ./game_controller/games:/ros2_ws/src/game_controller/games:ro
@@ -53,6 +59,8 @@ services:
       decision_making:
         condition: service_healthy
       communication_hub:
+        condition: service_healthy
+      expressive_say_bridge:
         condition: service_healthy
       llm_service:
         condition: service_healthy
@@ -75,11 +83,56 @@ services:
       network: host
     environment:
       ROS_DOMAIN_ID: 0
-    command: ["ros2", "run", "communication_hub", "ui_intent_bridge"]
+    command: ["ros2", "run", "game_controller", "ui_intent_bridge"]
     networks:
       - rosnet
     healthcheck:
       test: ["CMD", "bash", "-c", "source /opt/ros/humble/setup.bash && source /ros2_ws/install/setup.bash && ros2 node list | grep -q communication_hub_ui_intent_bridge"]
+      interval: 5s
+      timeout: 10s
+      retries: 10
+      start_period: 10s
+
+  # Mock communication_hub expressive path: /expressive_say -> /say
+  expressive_say_bridge:
+    image: game_controller_runtime:latest
+    build:
+      context: ..
+      dockerfile: game_controller/game_controller/Dockerfile.compose
+      network: host
+    environment:
+      ROS_DOMAIN_ID: 0
+    command: ["ros2", "run", "game_controller", "expressive_say_bridge_mock"]
+    depends_on:
+      tts_mock:
+        condition: service_healthy
+    networks:
+      - rosnet
+    healthcheck:
+      test: ["CMD", "bash", "-c", "source /opt/ros/humble/setup.bash && source /ros2_ws/install/setup.bash && ros2 action list | grep -q /expressive_say"]
+      interval: 5s
+      timeout: 10s
+      retries: 10
+      start_period: 10s
+
+  # Browser-backed TTS mock for local laptop audio
+  tts_mock:
+    image: game_controller_runtime:latest
+    build:
+      context: ..
+      dockerfile: game_controller/game_controller/Dockerfile.compose
+      network: host
+    environment:
+      ROS_DOMAIN_ID: 0
+      TTS_MOCK_UI_HOST: "0.0.0.0"
+      TTS_MOCK_UI_PORT: 8096
+    command: ["ros2", "run", "game_controller", "tts_mock_node"]
+    ports:
+      - "8096:8096"
+    networks:
+      - rosnet
+    healthcheck:
+      test: ["CMD", "bash", "-c", "python3 -c \"import urllib.request; urllib.request.urlopen('http://localhost:8096/healthz', timeout=2)\""]
       interval: 5s
       timeout: 10s
       retries: 10

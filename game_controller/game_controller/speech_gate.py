@@ -10,6 +10,7 @@ an ON_COMPLETE event for the current transactionId. For states that require
 from __future__ import annotations
 
 from dataclasses import dataclass
+import time
 from typing import Any, Callable, Optional, Set
 
 DoneCallback = Callable[[bool], None]
@@ -38,11 +39,17 @@ class SpeechGate:
         self._logger = logger
 
         self._inflight_tx: Optional[int] = None
+        self._inflight_started_at: dict[int, float] = {}
         self._completed: Set[int] = set()
 
     def reset(self) -> None:
         self._inflight_tx = None
+        self._inflight_started_at.clear()
         self._completed.clear()
+
+    def get_started_at(self, transaction_id: int) -> Optional[float]:
+        """Return when this tx started speaking."""
+        return self._inflight_started_at.get(int(transaction_id))
 
     def maybe_speak(self, request: SpeechRequest) -> bool:
         """Start speaking for this tx, and publish ON_COMPLETE when finished.
@@ -68,6 +75,7 @@ class SpeechGate:
             self._completed.add(tx)
             if self._inflight_tx == tx:
                 self._inflight_tx = None
+            self._inflight_started_at.pop(tx, None)
             if self._logger:
                 self._logger.info(f"Speech done (tx={tx}, success={bool(success)})")
             try:
@@ -88,7 +96,7 @@ class SpeechGate:
             return False
 
         self._inflight_tx = tx
+        self._inflight_started_at[tx] = time.monotonic()
         if self._logger:
             self._logger.info(f"Speech started (tx={tx})")
         return True
-

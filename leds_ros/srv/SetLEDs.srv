@@ -1,0 +1,9 @@
+int32 led_id
+int32[] r_values
+int32[] g_values
+int32[] b_values
+float32 fade_time
+bool wait_response
+---
+bool success
+string message

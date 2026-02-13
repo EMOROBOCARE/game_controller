@@ -27,6 +27,8 @@
 - `auto_advance.fail_l1` (default `2.0`)
 - `auto_advance.fail_l2` (default `2.0`)
 - `auto_advance.correct` (default `0.6`)
+- `auto_advance.correct_min_display` (default `3.0`, minimum time to keep CORRECT state visible before auto-advance when prompt feedback is spoken)
+- `auto_advance.correct_p1` (default `3.0`, legacy compatibility override for first P1 success delay)
 - `auto_advance.phase_complete` (default `0.3`)
 
 ### TTS Gate
@@ -51,7 +53,7 @@
 
 ## Configuration File
 Default file:
-- `game_controller/game_controller/config/game_controller.yaml`
+- `game_controller/config/game_controller.yaml`
 
 Use custom params at launch:
 

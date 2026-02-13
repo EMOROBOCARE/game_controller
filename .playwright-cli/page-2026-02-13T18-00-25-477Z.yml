@@ -1,0 +1,7 @@
+- generic [ref=e3]:
+  - banner [ref=e4]:
+    - generic [ref=e5]:
+      - heading "Generic UI" [level=1] [ref=e6]
+      - paragraph [ref=e7]: "WebSocket: open"
+    - generic [ref=e9]: "Layout: —"
+  - generic [ref=e10]: Waiting for manifest…

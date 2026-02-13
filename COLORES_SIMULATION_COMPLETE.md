@@ -36,10 +36,9 @@ A comprehensive Python script has been created to simulate a complete colores ga
 
 ### Documentation
 1. **README_COLORES_SIM.md** - Complete technical documentation
-2. **QUICKSTART_COLORES_SIM.md** - Quick start guide for users
-3. **SETUP_INSTRUCTIONS.md** - Setup and usage instructions
-4. **COLORES_SIMULATION_COMPLETE.md** - This file (summary)
-5. **Updated test/README.md** - Integration with test suite docs
+2. **COLORES_SIMULATION_COMPLETE.md** - This file (summary)
+3. **test/integration/README_COLORES_SIM.md** - Simulation workflow and output handling
+4. **test/README.md** - Integration-suite guidance
 
 ### Validation
 **Location:** `/home/alono/EmorobCare/games_src/game_controller/test/integration/validate_colores_sim.sh`
@@ -387,7 +386,7 @@ self.publish_game_selection("colores", phases, rounds_per_phase=2)
 │   ├── README_COLORES_SIM.md            # Technical docs
 │   └── validate_colores_sim.sh          # Validation script
 ├── docker-compose.colores-sim.yml       # Docker config
-├── QUICKSTART_COLORES_SIM.md            # Quick start
+├── COLORES_CLI_ONE_LINERS.md           # Runtime cheat sheet
 └── COLORES_SIMULATION_COMPLETE.md       # This file
 ```
 
@@ -397,7 +396,7 @@ self.publish_game_selection("colores", phases, rounds_per_phase=2)
 └── colores_full_game/
     ├── README.md                        # Auto-generated
     ├── index.md                         # Auto-generated
-    ├── SETUP_INSTRUCTIONS.md            # Usage guide
+    ├── (state directories)              # Runtime snapshots and descriptions
     └── [state folders]/                 # 40-60 folders
 ```
 
@@ -410,13 +409,13 @@ self.publish_game_selection("colores", phases, rounds_per_phase=2)
 ✅ Validation script passes
 ✅ Output directory structure defined
 ✅ Integration with test suite documented
-✅ Quick start guide available
+✅ Command cheat sheet available
 
 ## Support and Resources
 
 - **Main Documentation:** `test/integration/README_COLORES_SIM.md`
-- **Quick Start:** `QUICKSTART_COLORES_SIM.md`
-- **Setup Guide:** `ui_developer_manifests/colores_full_game/SETUP_INSTRUCTIONS.md`
+- **Cheat Sheet:** `COLORES_CLI_ONE_LINERS.md`
+- **Runbook:** `README.md` and `test/README.md`
 - **Test Suite Docs:** `test/README.md`
 - **Script Source:** `test/integration/simulate_colores_full_game.py`
 

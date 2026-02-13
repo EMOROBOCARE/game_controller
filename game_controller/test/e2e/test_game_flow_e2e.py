@@ -333,7 +333,12 @@ class TestGameInitialization:
         """Test that GAME_INIT event is published with correct structure."""
         state = runner.start_fresh_game(user_id=22, timeout=15)
         assert state is not None
-        assert runner.wait_for_log_contains("game_controller", "Published event: GAME_INIT", timeout=5, lines=800)
+        assert runner.wait_for_log_contains(
+            "game_controller",
+            "Published /decision/events: type=GAME_INIT",
+            timeout=5,
+            lines=800,
+        )
         assert runner.wait_for_log_contains("game_controller", "Starting game: colores", timeout=5, lines=800)
 
 
@@ -352,7 +357,7 @@ class TestStateTransitions:
 
         runner.publish_raw_user_intent("verde", correct=True)
 
-        assert runner.wait_for_log_contains("game_controller", "State update: CORRECT", timeout=8, lines=1000)
+        assert runner.wait_for_log_contains("game_controller", "game=CORRECT", timeout=8, lines=1000)
         state = runner.wait_for_state("WAIT_INPUT", timeout=10)
         assert state is not None, "Should auto-advance to next round"
     
@@ -363,7 +368,7 @@ class TestStateTransitions:
 
         runner.publish_raw_user_intent("azul", correct=False)
 
-        assert runner.wait_for_log_contains("game_controller", "State update: FAIL_L1", timeout=8, lines=1000)
+        assert runner.wait_for_log_contains("game_controller", "game=FAIL_L1", timeout=8, lines=1000)
     
     def test_second_incorrect_transitions_fail_l2(self, runner: DockerComposeTestRunner):
         """Test that second incorrect answer transitions to FAIL_L2."""
@@ -371,12 +376,12 @@ class TestStateTransitions:
         assert state is not None
 
         runner.publish_raw_user_intent("azul", correct=False)
-        assert runner.wait_for_log_contains("game_controller", "State update: FAIL_L1", timeout=8, lines=1000)
+        assert runner.wait_for_log_contains("game_controller", "game=FAIL_L1", timeout=8, lines=1000)
         state = runner.wait_for_state("WAIT_INPUT", timeout=10)
         assert state is not None, "Should return to WAIT_INPUT after FAIL_L1"
 
         runner.publish_raw_user_intent("rojo", correct=False)
-        assert runner.wait_for_log_contains("game_controller", "State update: FAIL_L2", timeout=8, lines=1000)
+        assert runner.wait_for_log_contains("game_controller", "game=FAIL_L2", timeout=8, lines=1000)
 
 
 class TestUIManifestUpdates:
@@ -452,7 +457,7 @@ class TestEndToEndGameFlow:
         
         # Submit incorrect answer
         runner.publish_raw_user_intent("azul", correct=False)
-        assert runner.wait_for_log_contains("game_controller", "State update: FAIL_L1", timeout=8, lines=1200)
+        assert runner.wait_for_log_contains("game_controller", "game=FAIL_L1", timeout=8, lines=1200)
         
         # Wait for auto-advance back to WAIT_INPUT (same round)
         state = runner.wait_for_state("WAIT_INPUT", timeout=10)
@@ -461,7 +466,7 @@ class TestEndToEndGameFlow:
         
         # Submit correct answer
         runner.publish_raw_user_intent("verde", correct=True)
-        assert runner.wait_for_log_contains("game_controller", "State update: CORRECT", timeout=8, lines=1200)
+        assert runner.wait_for_log_contains("game_controller", "game=CORRECT", timeout=8, lines=1200)
 
 
 class TestServiceAvailability:

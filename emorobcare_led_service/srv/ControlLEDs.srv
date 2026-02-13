@@ -1,0 +1,11 @@
+# Service for controlling LED animations (stop, pause, resume)
+
+# Request
+string command           # Command: "stop_fade", "turn_off_all"
+float32 fade_time        # Fade time when turning off (default: 0.0)
+
+---
+
+# Response
+bool success             # True if successful
+string message           # Status message or error description

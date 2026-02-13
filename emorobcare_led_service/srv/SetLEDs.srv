@@ -1,0 +1,19 @@
+# Service for setting LED colors with optional fade effect
+# This is the primary service for controlling individual or multiple LEDs
+
+# Request
+int32 led_id              # LED ID (-1 for all LEDs, 0-4 for specific LED)
+uint8[] r_values          # Red values (0-255), one per LED or single value for all
+uint8[] g_values          # Green values (0-255), one per LED or single value for all
+uint8[] b_values          # Blue values (0-255), one per LED or single value for all
+float32 fade_time         # Fade duration in seconds (0.0 = instant)
+bool wait_response        # Wait for Arduino I2C acknowledgment
+
+---
+
+# Response
+bool success              # True if command executed successfully
+string message            # Status message or error description
+uint8[] current_r         # Current red values of all LEDs after operation
+uint8[] current_g         # Current green values of all LEDs after operation
+uint8[] current_b         # Current blue values of all LEDs after operation

@@ -1,0 +1,5 @@
+string command
+float32 fade_time
+---
+bool success
+string message

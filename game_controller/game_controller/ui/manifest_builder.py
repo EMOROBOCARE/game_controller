@@ -1056,8 +1056,8 @@ def build_state_based_patches(
                 )
 
     elif state_upper == "FAIL_L1":
-        hint = payload.get("hint") or "Inténtalo de nuevo."
-        patches.append(build_game_screen_question_patch(str(hint), [], question_id=0, instance_index=instance_index))
+        # Keep question/options from QUESTION_PRESENT and only apply hint behavior
+        # (e.g., highlights/speech) from the node-level fail handling.
         patches.append(build_game_screen_effect_patch("none", instance_index=instance_index))
         patches.append(build_input_disabled_patch(False, instance_index=instance_index))
 

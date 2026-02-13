@@ -21,6 +21,7 @@ class AutoAdvanceConfig:
     fail_l1: float = 2.0
     fail_l2: float = 2.0
     correct: float = 0.6
+    correct_min_display: float = 3.0
     correct_p1: float = 3.0
     phase_complete: float = 0.3
     
@@ -34,6 +35,7 @@ class AutoAdvanceConfig:
             fail_l1=float(data.get("fail_l1", 2.0)),
             fail_l2=float(data.get("fail_l2", 2.0)),
             correct=float(data.get("correct", 0.6)),
+            correct_min_display=float(data.get("correct_min_display", 3.0)),
             correct_p1=float(data.get("correct_p1", 3.0)),
             phase_complete=float(data.get("phase_complete", 0.3)),
         )
@@ -93,17 +95,23 @@ class AutoAdvanceScheduler:
         self,
         game_state: str,
         transaction_id: int,
+        timeout_override: Optional[float] = None,
     ) -> bool:
         """Schedule an ON_COMPLETE for the given state if auto-advance is needed.
         
         Args:
             game_state: Current game state (e.g., "PHASE_INTRO")
             transaction_id: Transaction ID from decision_state
+            timeout_override: Optional fixed timeout used instead of configured default
             
         Returns:
             True if a timer was scheduled, False otherwise
         """
-        timeout = self._config.get_timeout_for_state(game_state)
+        timeout = (
+            float(timeout_override)
+            if timeout_override is not None
+            else self._config.get_timeout_for_state(game_state)
+        )
         
         if timeout is None:
             if self._logger:

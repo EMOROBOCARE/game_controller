@@ -33,7 +33,7 @@ Constraints:
 - Avoid printing full manifests/events; summarize and reference `step` names + key fields.
 
 Contract invariants to validate (high priority):
-1) Manifest always includes `instances` for `user_panel` (UserPanel) + `game_screen` (GameScreenComponent) and layout references only existing instances.
+1) Manifest always includes `instances` for `user_panel` (UserPanel) + `game_screen` (currently `GameSelector`/`GameComponent` in this runtime) and layout references only existing instances.
 2) `game_screen.config.controls` always exists with boolean keys:
    - `showPause`, `showResume`, `showStop`, `showReset`, `showSkipPhase`
 3) Menu state: `game_screen.config.mode == "menu"`, `inputDisabled == false`, and all controls are hidden.

@@ -10,7 +10,7 @@
 ## Components
 
 ### `GameControllerNode`
-Main node in `game_controller/game_controller/game_controller/node.py`.
+Main node in `game_controller/game_controller/node.py`.
 
 Responsibilities:
 - Subscribes to:
@@ -38,8 +38,8 @@ Files:
 
 ### Manifest Pipeline
 Files:
-- `game_controller/game_controller/game_controller/ui/manifest_builder.py`
-- `game_controller/game_controller/game_controller/ui/manifest_client.py`
+- `game_controller/game_controller/ui/manifest_builder.py`
+- `game_controller/game_controller/ui/manifest_client.py`
 
 Manifest model:
 - Stable `layout`
@@ -74,7 +74,8 @@ Configured in `auto_advance.*` params.
 Current pattern:
 - `PHASE_INTRO`: timer-based `ON_COMPLETE`
 - `QUESTION_PRESENT`: expressive TTS completion gate when enabled, timer fallback otherwise
-- `CORRECT`, `FAIL_L1`, `FAIL_L2`, `PHASE_COMPLETE`: timer-based `ON_COMPLETE`
+- `CORRECT`: speech completion + minimum display gate when positive feedback is spoken, fallback timer otherwise
+- `FAIL_L1`, `FAIL_L2`, `PHASE_COMPLETE`: timer-based `ON_COMPLETE`
 
 ## Integration Prerequisites
 For browser rendering with current controller manifests, `generic_ui/emorobcare_components` must expose:

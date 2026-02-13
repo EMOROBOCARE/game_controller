@@ -109,3 +109,30 @@ def test_no_schedule_for_wait_input():
         lambda tx: None,
     )
     assert scheduler.schedule_if_needed("WAIT_INPUT", 1) is False
+
+
+def test_schedule_uses_timeout_override(monkeypatch):
+    timers = []
+
+    class RecordingTimer:
+        def __init__(self, interval, function, args=None, kwargs=None):
+            self.interval = interval
+            self.function = function
+            self.args = args or ()
+            self.kwargs = kwargs or {}
+            timers.append(self)
+
+        def start(self):
+            pass
+
+        def cancel(self):
+            pass
+
+    monkeypatch.setattr(auto_advance.threading, "Timer", RecordingTimer)
+
+    scheduler = auto_advance.AutoAdvanceScheduler(
+        auto_advance.AutoAdvanceConfig(phase_intro=2.5),
+        lambda tx: None,
+    )
+    assert scheduler.schedule_if_needed("PHASE_INTRO", 7, timeout_override=0.25) is True
+    assert timers[0].interval == 0.25

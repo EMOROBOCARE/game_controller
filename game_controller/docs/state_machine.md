@@ -91,9 +91,13 @@ Timer configuration is read from `auto_advance.*` parameters.
 
 Special case:
 - `PHASE_INTRO` is auto-skipped by default (`auto_advance.phase_intro = 0.0`).
-- In `QUESTION_PRESENT`, controller can gate `ON_COMPLETE` on `/expressive_say` completion when TTS is enabled and prompt is non-empty.
-- In `CORRECT`, controller can also gate `ON_COMPLETE` on spoken feedback completion.
-- If that gate is not used, it falls back to timer-based `ON_COMPLETE`.
+- In `QUESTION_PRESENT`, controller may gate `ON_COMPLETE` on `/expressive_say` completion when TTS is enabled and the prompt is present for speech.
+- Prompt playback is controlled per question via `question.say_prompt`; when explicitly `false`, prompt speech is skipped and timer-based advance is used.
+- In `CORRECT`, controller gates `ON_COMPLETE` to wait for positive feedback speech (generated from `positive_feedback`) when available.
+- `CORRECT` transitions are additionally delayed until at least `auto_advance.correct_min_display` seconds have elapsed from speech start.
+- If the spoken-gate path is not active, `CORRECT` falls back to timer-based `ON_COMPLETE`.
+
+- In `WAIT_INPUT` for `P5`, if the child does not answer within `hint_timeout` (from game content, default 5s), `game_controller` speaks a hint prompt derived from `expected_question`; repeated hints for the same child in a phase become shorter ("¿Donde está el?").
 
 ## Input Gating
 `game_controller` only forwards answers when current game state is:

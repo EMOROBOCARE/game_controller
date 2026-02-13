@@ -1,0 +1,35 @@
+# Service for running predefined LED effects and animations
+# Supports various built-in effects with customizable parameters
+
+# Request
+string effect_name        # Effect name: rainbow, cascade, heartbeat, wave, blink, 
+                         # sparkle, knight_rider, spain_flag, emergency, progress_bar, color_cycle
+                         
+# Effect parameters (interpretation depends on effect_name)
+float32 duration         # Total duration in seconds (default: 3.0)
+float32 speed            # Speed factor (default: 0.1)
+int32 cycles             # Number of repetition cycles (default: 3)
+float32 fade_time        # Fade time between transitions (default: 0.0)
+string direction         # Direction for cascade effect: "forward" or "backward"
+float32 density          # Density for sparkle effect (0.0-1.0, default: 0.3)
+float32 progress         # Progress for progress_bar (0.0-1.0)
+
+# Color parameters (RGB 0-255)
+uint8 color1_r           # Primary color red component
+uint8 color1_g           # Primary color green component
+uint8 color1_b           # Primary color blue component
+uint8 color2_r           # Secondary color red component (for wave, blink effects)
+uint8 color2_g           # Secondary color green component
+uint8 color2_b           # Secondary color blue component
+
+# Multi-color parameters (for effects that support multiple colors)
+uint8[] colors_r         # Array of red values for color lists
+uint8[] colors_g         # Array of green values for color lists
+uint8[] colors_b         # Array of blue values for color lists
+
+---
+
+# Response
+bool success             # True if effect executed successfully
+string message           # Status message or error description
+float32 actual_duration  # Actual duration the effect ran (in seconds)

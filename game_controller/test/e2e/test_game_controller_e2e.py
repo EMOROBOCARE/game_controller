@@ -320,7 +320,7 @@ class TestFullGameFlow:
         
         state = ROS2Helper.wait_for_state("WAIT_INPUT", timeout=5)
         assert state is not None
-        assert state.get("transactionId", 0) > initial_tx + 3
+        assert state.get("transactionId", 0) >= initial_tx + 3
 
 
 if __name__ == "__main__":

@@ -12,7 +12,7 @@ Rounds/questions sent to `decision_making` are generated at runtime by `build_ga
 ## File Layout
 
 ```text
-game_controller/game_controller/games/
+game_controller/games/
   colores.yaml
   answers/
     colours.json
@@ -50,8 +50,11 @@ Key fields:
 - `supportedPhases`: allowed phase sequence options
 - `difficulties`: UI/selection metadata
 - `phaseConfig`: per-phase overrides merged with shared defaults
+  - `say_prompt` (default `true`): when `false`, skip speaking `question.prompt` in `QUESTION_PRESENT` for that phase/question.
+  - `expected_question`: expected text for the question used by P5 hint flow.
 - `answerType`: answer pool file name under `games/answers/`
 - Optional: `gameType`, `specialHandler`, `requires`, feedback/effects metadata
+- Optional root field: `hint_timeout` (seconds before first P5 hint appears while waiting for input)
 
 ## Answer Pool Schema (`games/answers/<answerType>.json`)
 
@@ -71,7 +74,7 @@ Supported fields used by builder:
 - Optional: `type`, `difficulty`
 
 ## Runtime Payload Generation
-`build_game_init_payload()` in `game_controller/game_controller/game_controller/content/builder.py`:
+`build_game_init_payload()` in `game_controller/game_controller/content/builder.py`:
 
 1. Resolves phase sequence from request + `supportedPhases`.
 2. Merges `phaseConfig` with shared defaults.
@@ -100,6 +103,8 @@ Generated round shape:
       { "id": "red", "label": "red", "imageUrl": "red_circle", "correct": true },
       { "id": "blue", "label": "blue", "imageUrl": "blue_circle", "correct": false }
     ],
+    "say_prompt": true,
+    "expected_question": "¿Dónde está el color?",
     "meta": { "answerType": "colours" }
   }
 }

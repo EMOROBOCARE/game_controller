@@ -1,0 +1,5 @@
+# audio_tts_msgs/srv/SetVoice.srv
+string voice  # the desired TTS voice
+---
+bool success
+string message

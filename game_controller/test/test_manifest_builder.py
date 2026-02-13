@@ -258,6 +258,22 @@ def test_build_state_based_patches_wait_input_p5_keeps_input_disabled():
     assert items_patch["value"] == options_patch["value"]
 
 
+def test_build_state_based_patches_fail_l1_does_not_replace_question():
+    payload = {
+        "hint": "Inténtalo de nuevo.",
+        "action": "highlight",
+        "correctOptionId": "rojo",
+    }
+    patches = build_state_based_patches("FAIL_L1", payload)
+    question_patches = [patch for patch in patches if str(patch.get("path", "")).endswith("/question")]
+    input_disabled_patch = [
+        patch for patch in patches if str(patch.get("path", "")).endswith("/inputDisabled")
+    ][-1]
+
+    assert question_patches == []
+    assert input_disabled_patch["value"] is False
+
+
 def test_build_state_based_patches_p5_highlight():
     payload = {
         "highlighted_ids": ["2"],

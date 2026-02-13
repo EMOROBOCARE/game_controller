@@ -1,0 +1,21 @@
+- main [ref=e5]:
+  - generic [ref=e12]:
+    - heading "EMOROBCARE" [level=1] [ref=e13]
+    - generic [ref=e15] [cursor=pointer]:
+      - img "Icono usuario" [ref=e16]
+      - generic [ref=e17]: Pepe
+      - generic [ref=e18]: ▼
+  - generic [ref=e72]:
+    - generic [ref=e73]:
+      - paragraph [ref=e75]: Une los colores iguales.
+      - generic [ref=e77]:
+        - img
+        - generic [ref=e78]:
+          - generic [ref=e79]:
+            - img [ref=e80] [cursor=pointer]
+            - img [ref=e81] [cursor=pointer]
+          - generic [ref=e82]:
+            - img [ref=e83] [cursor=pointer]
+            - img [ref=e84] [cursor=pointer]
+    - button "pausa" [ref=e89] [cursor=pointer]:
+      - generic [ref=e90]: pausa

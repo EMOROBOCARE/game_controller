@@ -1,0 +1,15 @@
+# Request to generate a robot response for a specific action
+# The action_description should be a clear description of what the robot should do/say
+# Examples:
+#   - "greet the boy, named 'Pepe' in a friendly way"
+#   - "tell the child to sit down calmly"
+#   - "encourage the child to try again"
+string action_description
+
+---
+# The generated response that the robot should say/do
+string robot_response
+
+# Error message if processing failed
+# Empty string indicates success
+string error_msg

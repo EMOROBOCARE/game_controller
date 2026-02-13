@@ -1,7 +1,7 @@
 # game_controller ↔ decision_making integration report
 
 - Success: `True`
-- Duration: `60.2s`
+- Duration: `63.2s`
 - ROS_DOMAIN_ID: `43`
 
 ## Artifacts

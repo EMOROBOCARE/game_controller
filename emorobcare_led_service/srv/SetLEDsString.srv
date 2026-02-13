@@ -1,0 +1,17 @@
+# Service for setting LED colors using string color names with optional fade effect
+# This service allows setting colors using predefined color names instead of RGB values
+
+# Request
+int32 led_id              # LED ID (-1 for all LEDs, 0-4 for specific LED)
+string color_name         # Color name (e.g., "red", "blue", "care_blue", etc.)
+float32 fade_time         # Fade duration in seconds (0.0 = instant)
+bool wait_response        # Wait for Arduino I2C acknowledgment
+
+---
+
+# Response
+bool success              # True if command executed successfully
+string message            # Status message or error description
+uint8[] current_r         # Current red values of all LEDs after operation
+uint8[] current_g         # Current green values of all LEDs after operation
+uint8[] current_b         # Current blue values of all LEDs after operation

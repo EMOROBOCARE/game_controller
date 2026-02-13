@@ -1,0 +1,9 @@
+string text
+string language "es"
+string emotion
+float32 temperature 0.5
+float32 rate 1.0
+---
+string text
+---
+audio_tts_msgs/AudioStamped audio

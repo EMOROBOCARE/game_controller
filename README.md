@@ -24,18 +24,30 @@ Deep-dives:
 - [`game_controller/docs/ui_integration.md`](game_controller/docs/ui_integration.md) — manifest structure, required UI components, patching strategy
 - [`game_controller/docs/game_content.md`](game_controller/docs/game_content.md) — game content format (YAML-first in `game_controller/games/*.yaml`, JSON fallback)
 - [`game_controller/docs/configuration.md`](game_controller/docs/configuration.md) — ROS parameters, launch args, Docker configuration
+- [`IMPLEMENTATION_PLAN_REAL_PACKAGES.md`](IMPLEMENTATION_PLAN_REAL_PACKAGES.md) — plan to wire runtime to local real packages
+- [`REAL_PACKAGE_MIGRATION_DOCUMENTATION.md`](REAL_PACKAGE_MIGRATION_DOCUMENTATION.md) — migration audit, package sources, and scope
+- [`GAME_CONTROLLER_PACKAGE_SOURCE_ALIGNMENT.md`](GAME_CONTROLLER_PACKAGE_SOURCE_ALIGNMENT.md) — process-by-process package source mapping and current discrepancies
 
 ## Repository layout
 
-```
-.
-├─ communication_hub/              # ROS 2 package
-├─ game_controller/                # ROS 2 package (+ docs, config, games)
-├─ test/                           # integration tests + Dockerfile
-├─ docker-compose.yml              # run the system
-├─ docker-compose.tests.yml        # integration test compose
-└─ docker-compose.e2e.yml          # e2e test compose
-```
+ ```
+ .
+ ├─ communication_hub/              # ROS 2 package
+ ├─ game_controller/                # ROS 2 package (+ docs, config, games)
+ ├─ audio_tts_msgs/                 # local mirror of real /src package
+ ├─ hri_actions_msgs/               # local mirror of real /src package
+ ├─ chatbot_msgs/                   # local mirror of real /src package
+ ├─ emorobcare_led_service/         # local mirror of real /src package
+ ├─ communication_hub/              # local mirror of real /src package
+ ├─ test/                           # integration tests + Dockerfile
+ ├─ docker-compose.yml                   # run the system
+ ├─ docker-compose.tests.yml             # integration test compose
+ ├─ docker-compose.e2e.yml               # e2e test compose
+ ├─ docker-compose.gc_dm_integration.yml  # headless DM + manifest integration harness
+ ├─ docker-compose.isolated.yml          # isolated ROS2 integration stack
+ ├─ docker-compose.colores-sim.yml       # complete colores capture simulation
+ └─ docker-compose.unit.yml              # unit test compose
+ ```
 
 ## Prerequisites
 
@@ -67,6 +79,7 @@ Notes:
   - UI backend: `http://localhost:8092`
   - Components CDN: `http://localhost:8084`
   - LED mock UI: `http://localhost:8095`
+  - TTS mock UI: `http://localhost:8096`
 - Remote modules are expected at `http://localhost:8084/emorobcare-components/assets/remoteEntry.js`.
 
 ### Local mock services
@@ -74,6 +87,33 @@ Notes:
 - `llm_service` provides `/chatbot/rephrase` and `/chatbot/evaluate_answer` (plus other `/chatbot/*` mock endpoints) for local development.
 - `led_service_ros` runs `emorobcare_led_service`. Set `LED_USE_MOCK=1` (default in compose) to use an in-memory LED backend on laptops without hardware.
 - `led_service_mock` exposes a small web UI that calls `/set_leds`, `/play_effect`, `/control_leds`, and `/get_led_state`.
+- `tts_mock` provides `/say` (`audio_tts_msgs/action/TTS`) and a browser UI. Open `http://localhost:8096`, click `Enable Audio`, and incoming speech from `/expressive_say` will play through laptop speakers.
+- `expressive_say_bridge` exposes `/expressive_say` (`audio_tts_msgs/action/Communication`) and forwards to `/say`, matching the communication-hub style chain.
+- `game_controller` now reads users from PostgreSQL `children` and writes child answer events to `interaction_logs`.
+- Runtime dependency packages are mirrored locally for the stack from real `/src` sources:
+  - `game_controller/audio_tts_msgs`
+  - `game_controller/hri_actions_msgs`
+  - `game_controller/chatbot_msgs`
+  - `game_controller/emorobcare_led_service`
+  - `game_controller/communication_hub`
+- `generic_ui_interfaces` is external to this folder and is sourced from `../generic_ui/ros2/generic_ui_interfaces`.
+- `stub_*` packages under `game_controller` remain for isolated/unit test Dockerfiles.
+
+## Current Package Wiring Status (Runtime vs Tests)
+
+- Real source mirrors from `/home/alono/EmorobCare/src` are present in:
+  - `audio_tts_msgs/`
+  - `hri_actions_msgs/`
+  - `chatbot_msgs/`
+  - `emorobcare_led_service/`
+  - `communication_hub/`
+- Runtime compose + integration harness now build from these real mirrored packages.
+- `generic_ui_interfaces` remains external and is sourced from `../generic_ui/ros2/generic_ui_interfaces`.
+- Isolated/unit-test paths still keep stubs on purpose (`game_controller/stub_*`, `test/Dockerfile.test`).
+- For full alignment details by process, see:
+  - [`REAL_PACKAGE_MIGRATION_DOCUMENTATION.md`](REAL_PACKAGE_MIGRATION_DOCUMENTATION.md)
+  - [`IMPLEMENTATION_PLAN_REAL_PACKAGES.md`](IMPLEMENTATION_PLAN_REAL_PACKAGES.md)
+  - [`GAME_CONTROLLER_PACKAGE_SOURCE_ALIGNMENT.md`](GAME_CONTROLLER_PACKAGE_SOURCE_ALIGNMENT.md)
 
 Service checks:
 
@@ -85,7 +125,31 @@ docker compose exec llm_service bash -lc \
 docker compose exec led_service_ros bash -lc \
   'source /opt/ros/humble/setup.bash && source /ros2_ws/install/setup.bash && \
    ros2 service list | grep -E "^/(set_leds|play_effect|get_led_state|control_leds)$"'
+
+docker compose exec tts_mock bash -lc \
+  'source /opt/ros/humble/setup.bash && source /ros2_ws/install/setup.bash && \
+   ros2 action list | grep -E "^/(say|expressive_say)$"'
 ```
+
+### Voice I/O quick check (mock TTS + ROS2 intents)
+
+```bash
+# 1) In a browser, open http://localhost:8096 and click "Enable Audio"
+
+# 2) Trigger robot speech through the production action contract
+docker compose exec game_controller bash -lc \
+  'source /opt/ros/humble/setup.bash && source /ros2_ws/install/setup.bash && \
+   ros2 action send_goal /expressive_say audio_tts_msgs/action/Communication \
+   "{text: \"Hola, esta es una prueba de voz\", language: \"es\"}"'
+
+# 3) Inject a speech-like user input on /intents (same contract used by game_controller)
+docker compose exec game_controller bash -lc \
+  "source /opt/ros/humble/setup.bash && source /ros2_ws/install/setup.bash && \
+   ros2 topic pub --once /intents hri_actions_msgs/msg/Intent \
+   \"{intent: '__raw_user_input__', data: '{\\\"input\\\":\\\"rojo\\\"}', source: '__unknown_agent__', modality: '__modality_speech__', priority: 128, confidence: 1.0}\""
+```
+
+If you already run a speech node from `/home/alono/EmorobCare/src` that publishes `hri_actions_msgs/msg/Intent` on `/intents`, it can replace step 3 directly.
 
 ## Configuration
 
@@ -116,6 +180,20 @@ assets and module federation entry:
 - `GAME_CONTROLLER_REMOTE_ENTRY_BASE_URL` derives from that base
 
 This prevents `remoteEntry.js` 404 errors caused by mismatched paths.
+
+### PostgreSQL source of truth (users + answers)
+
+`game_controller` reads users from `children` and saves answers in `interaction_logs`.
+
+Compose defaults:
+
+- `POSTGRES_DB=emorobcare_db`
+- `POSTGRES_USER=emorobcare`
+- `POSTGRES_PASSWORD=D3B3rdad.Emylio`
+- `POSTGRES_HOST=10.147.19.11`
+- `POSTGRES_PORT=5432`
+
+Disable DB integration with `GAME_CONTROLLER_DB_ENABLED=0` (falls back to static users and disables answer logging).
 
 ## Testing
 
@@ -186,7 +264,7 @@ $COMPOSE exec game_controller bash -lc \
 
 # 5) Observe state and logs
 $COMPOSE exec decision_making bash -lc \
-  'source /opt/ros/humble/setup.bash && source /ws/install/setup.bash && \
+'source /opt/ros/humble/setup.bash && source /ros2_ws/install/setup.bash && \
    timeout 10 ros2 topic echo /decision/state --once'
 $COMPOSE logs -f game_controller backend emorobcare_components_cdn web
 ```

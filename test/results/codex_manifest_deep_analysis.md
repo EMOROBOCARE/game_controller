@@ -65,7 +65,7 @@
 - assets: question/option images are IDs/relative paths; UI needs a defined resolver/base URL.
 
 ### UI readiness checklist (minimum)
-- Load remote modules from componentRegistry (scope/module/url) for UserPanel and GameScreenComponent.
+- Load remote modules from componentRegistry (scope/module/url) for UserPanel and the active game component (`GameSelector` or `GameComponent`).
 - Render by mode: menu uses games[] + startGameOpId; game uses question/options/phase/state + uiInputOpId.
 - Emit ROS messages via ops as {data: JSON.stringify(payload)} (std_msgs/String) for selections and ui_input.
 - Respect controls.show* to show/hide Pause/Resume/Stop/Reset/SkipPhase buttons.

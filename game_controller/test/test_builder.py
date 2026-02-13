@@ -211,3 +211,22 @@ class TestBuildGameInitPayload:
         assert question["prompt"] == question["promptVerbal"]
         assert question["promptText"].startswith("Mira bien.")
         assert question["promptVerbal"].startswith("Escucha bien.")
+
+    def test_phase_config_flags_are_forwarded_to_questions(self):
+        game_content = {
+            "slug": "test",
+            "title": "Test",
+            "intro": "Test",
+            "supportedPhases": ["P5"],
+            "answerType": "animals",
+            "phaseConfig": {
+                "P5": {
+                    "say_prompt": False,
+                    "expected_question": "¿Dónde está el animal?",
+                }
+            },
+        }
+        payload = build_game_init_payload(game_content, phases=["P5"], rounds_per_phase=1)
+        question = payload["rounds"][0]["question"]
+        assert question["say_prompt"] is False
+        assert question["expected_question"] == "¿Dónde está el animal?"
