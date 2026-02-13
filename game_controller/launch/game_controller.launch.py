@@ -42,19 +42,30 @@ def generate_launch_description():
                 "topics.user_selector": "/game/user_selector",
                 "topics.decision_events": "/decision/events",
                 "topics.current_user": "/game/current_user",
+                "input_bridge.enabled": False,
                 
                 # Generic UI
                 "generic_ui.update_manifest_service": "/generic_ui/update_manifest",
                 "generic_ui.manifest_timeout_sec": 5.0,
                 
                 # Auto-advance timeouts
-                "auto_advance.phase_intro": 2.0,
+                "auto_advance.phase_intro": 0.0,
                 "auto_advance.round_setup": 0.05,
                 "auto_advance.question_present": 0.05,
                 "auto_advance.fail_l1": 2.0,
                 "auto_advance.fail_l2": 2.0,
                 "auto_advance.correct": 0.6,
                 "auto_advance.phase_complete": 0.3,
+
+                # Chatbot / speech behavior
+                "chatbot.enabled": True,
+                "chatbot.rephrase_service": "/chatbot/rephrase",
+                "chatbot.evaluate_service": "/chatbot/evaluate_answer",
+                "chatbot.service_wait_timeout_sec": 0.05,
+                "chatbot.evaluate_speech_only": True,
+                "tts.enabled": True,
+                "tts.rephrase_question_enabled": True,
+                "tts.rephrase_correct_enabled": True,
                 
                 # Game defaults
                 "game_defaults.difficulty": LaunchConfiguration("difficulty"),

@@ -8,6 +8,7 @@ This controller publishes manifests for two runtime components:
 from __future__ import annotations
 
 import os
+import unicodedata
 from typing import Any, Dict, List, Optional, Set
 
 
@@ -148,6 +149,11 @@ def build_ops() -> Dict[str, Dict[str, Any]]:
             "rosType": "std_msgs/msg/String",
             "topic": "/ui/input",
         },
+        "volume": {
+            "kind": "topic_pub",
+            "rosType": "std_msgs/msg/Float32",
+            "topic": "/volume",
+        },
         UI_TRACE_OP_ID: {
             "kind": "topic_pub",
             "rosType": UI_TRACE_ROS_TYPE,
@@ -204,8 +210,9 @@ def build_menu_instances(
         "users": users,
         "userPanelOpId": "user_selector",
         "disabled": False,
-        # Avoid remote-bundle-relative icon path resolution issues on host shell.
-        "userIconUrl": "/assets/user.png",
+        # Resolve through the shared-asset rewrite pipeline so CDN and
+        # compose base-URL overrides keep working.
+        "userIconUrl": rewrite_asset_url("images/user.png"),
     }
     if active_user is not None:
         user_panel_config["activeUser"] = active_user
@@ -226,6 +233,7 @@ def build_selector_config(
     username: str = "",
     round_tx: int = 0,
     answer_op_id: str = "ui_input",
+    volume_op_id: str = "volume",
 ) -> Dict[str, Any]:
     """Build menu config for GameSelector.
 
@@ -252,7 +260,7 @@ def build_selector_config(
         "options": [],
         "pause": False,
         "gameFlowOpId": answer_op_id,
-        "volumeOpId": answer_op_id,
+        "volumeOpId": volume_op_id,
         # Telemetry extras used by controller.
         "state": {"system": "IDLE", "gameState": None, "sessionId": None, "transactionId": int(round_tx)},
         "phase": "",
@@ -267,6 +275,7 @@ def build_game_config(
     effect: str = "none",
     pause: bool = False,
     answer_op_id: str = "ui_input",
+    volume_op_id: str = "volume",
     games: Optional[List[Dict[str, Any]]] = None,
 ) -> Dict[str, Any]:
     """Build gameplay config for GameComponent.
@@ -304,7 +313,7 @@ def build_game_config(
         "options": list(items),
         "pause": bool(pause),
         "gameFlowOpId": answer_op_id,
-        "volumeOpId": answer_op_id,
+        "volumeOpId": volume_op_id,
         # Telemetry extras used by controller.
         "state": {"system": "GAME", "gameState": None, "sessionId": None, "transactionId": 0},
         "phase": "",
@@ -319,7 +328,7 @@ def build_game_screen_instance(
         "id": GAME_SCREEN_INSTANCE_ID,
         "component": "GameSelector",
         "config": build_selector_config(games=games),
-        "capabilities": ["ui_input", "game_selector", "decision_state", "ui_update", UI_TRACE_OP_ID],
+        "capabilities": ["ui_input", "volume", "game_selector", "decision_state", "ui_update", UI_TRACE_OP_ID],
         "bindings": {
             # GameSelector emits the op-id as the event name.
             "game_selector": "game_selector",
@@ -328,7 +337,7 @@ def build_game_screen_instance(
             "ui_input": "ui_input",
             "answer": "ui_input",
             "gameFlow": "ui_input",
-            "volume": "ui_input",
+            "volume": "volume",
             # Silence unsupported bubbling events from nested Button components.
             "click": UI_TRACE_OP_ID,
             "select": UI_TRACE_OP_ID,
@@ -660,6 +669,9 @@ def _normalize_item_for_game_component(opt: Dict[str, Any]) -> Optional[Dict[str
     if bool(opt.get("highlighted")):
         item["highlighted"] = True
 
+    if "disabled" in opt:
+        item["disabled"] = bool(opt.get("disabled"))
+
     return item
 
 
@@ -755,6 +767,81 @@ def build_highlighting_items_patch(
             opt["hidden"] = True
             opt["highlighted"] = False
     return build_game_screen_items_patch(patched, instance_index=instance_index)
+
+
+def build_disabled_options_patches(
+    options: List[Dict[str, Any]],
+    disabled: bool,
+    instance_index: int = DEFAULT_GAME_SCREEN_INDEX,
+) -> List[Dict[str, Any]]:
+    """Force disabled state for rendered options/items."""
+    patched = format_options_for_ui(options)
+    for opt in patched:
+        opt["disabled"] = bool(disabled)
+    return [
+        build_game_screen_options_patch(patched, instance_index=instance_index),
+        build_game_screen_items_patch(patched, instance_index=instance_index),
+    ]
+
+
+def _normalize_match_value(value: Any) -> str:
+    text = str(value or "").strip().lower()
+    if not text:
+        return ""
+    normalized = unicodedata.normalize("NFD", text)
+    return "".join(ch for ch in normalized if unicodedata.category(ch) != "Mn")
+
+
+def build_hint_highlight_patches(
+    options: List[Dict[str, Any]],
+    correct_option_id: Any,
+    instance_index: int = DEFAULT_GAME_SCREEN_INDEX,
+) -> List[Dict[str, Any]]:
+    """Highlight the correct option without hiding the others.
+
+    Unlike P5 highlighting, this keeps every option visible and only toggles
+    the `highlighted` flag for the matching correct option.
+    """
+    if not isinstance(options, list) or not options:
+        return []
+    target = _normalize_match_value(correct_option_id)
+    if not target:
+        for option in options:
+            if not isinstance(option, dict) or not bool(option.get("correct")):
+                continue
+            candidate = (
+                option.get("id")
+                or option.get("label")
+                or option.get("value")
+                or option.get("text")
+            )
+            target = _normalize_match_value(candidate)
+            if target:
+                break
+    if not target:
+        return []
+
+    ui_options = format_options_for_ui(options)
+    matched = False
+    for opt in ui_options:
+        candidates = (
+            opt.get("id"),
+            opt.get("label"),
+            opt.get("text"),
+        )
+        is_match = any(_normalize_match_value(candidate) == target for candidate in candidates)
+        opt["highlighted"] = bool(is_match)
+        opt["hidden"] = False
+        if is_match:
+            matched = True
+
+    if not matched:
+        return []
+
+    return [
+        build_game_screen_options_patch(ui_options, instance_index=instance_index),
+        build_game_screen_items_patch(ui_options, instance_index=instance_index),
+    ]
 
 
 def format_options_for_ui(
@@ -855,10 +942,12 @@ def _fallback_options_from_question(question: Dict[str, Any]) -> List[Dict[str, 
 
 
 def _answer_type_for_payload(phase: str, question_type: str, options: List[Dict[str, Any]]) -> str:
-    if not options:
-        return "none"
     phase_code = str(phase or "").upper()
     phase_code_alnum = "".join(ch for ch in phase_code if ch.isalnum())
+    if phase_code_alnum in {"P2", "P6"}:
+        return "none"
+    if not options:
+        return "none"
     # P1 is the matching/association phase and should render MatchingPhase.
     if phase_code_alnum in {"P1", "MATCHING", "ASSOCIATION", "MATCHINGCOMPONENTS"}:
         return "match"
@@ -866,6 +955,12 @@ def _answer_type_for_payload(phase: str, question_type: str, options: List[Dict[
     if q_type in {"phase_intro", "phase_complete", "correct", "fail_l1", "fail_l2"}:
         return "none"
     return "button"
+
+
+def _is_speech_only_phase(phase: Any) -> bool:
+    phase_code = str(phase or "").upper()
+    phase_code_alnum = "".join(ch for ch in phase_code if ch.isalnum())
+    return phase_code_alnum in {"P2", "P5", "P6"}
 
 
 def build_state_based_patches(
@@ -900,15 +995,20 @@ def build_state_based_patches(
 
     elif state_upper == "QUESTION_PRESENT":
         question = payload.get("question", {})
-        prompt = question.get("prompt") or question.get("text") or ""
+        prompt = question.get("promptText") or question.get("prompt") or question.get("text") or ""
         images = _normalize_question_images(question)
+        phase = payload.get("phase", "")
+        question_type = question.get("questionType", "")
         options = question.get("options", [])
         if not isinstance(options, list):
             options = []
-        if not options:
+        if not options and not _is_speech_only_phase(phase):
             options = _fallback_options_from_question(question)
         ui_options = format_options_for_ui(options)
-        answer_type = _answer_type_for_payload(payload.get("phase", ""), question.get("questionType", ""), ui_options)
+        answer_type = _answer_type_for_payload(phase, question_type, ui_options)
+        if answer_type == "match":
+            images = []
+        display_options = [] if answer_type == "none" else ui_options
         patches.append(
             build_game_screen_question_patch(
                 str(prompt),
@@ -917,16 +1017,43 @@ def build_state_based_patches(
                 instance_index=instance_index,
             )
         )
-        patches.append(build_game_screen_options_patch(ui_options, instance_index=instance_index))
-        patches.append(build_game_screen_items_patch(ui_options, instance_index=instance_index))
+        patches.append(build_game_screen_options_patch(display_options, instance_index=instance_index))
+        patches.append(build_game_screen_items_patch(display_options, instance_index=instance_index))
         patches.append(build_game_screen_answer_type_patch(answer_type, instance_index=instance_index))
         patches.append(build_game_screen_effect_patch("none", instance_index=instance_index))
         patches.append(build_input_disabled_patch(True, instance_index=instance_index))
 
     elif state_upper == "WAIT_INPUT":
-        # Keep question/options from QUESTION_PRESENT; enable input.
+        # Keep question/options from QUESTION_PRESENT.
         patches.append(build_game_screen_effect_patch("none", instance_index=instance_index))
-        patches.append(build_input_disabled_patch(False, instance_index=instance_index))
+        phase_code = str(payload.get("phase") or "").strip().upper()
+        speech_only = _is_speech_only_phase(phase_code)
+        patches.append(
+            build_input_disabled_patch(
+                speech_only,
+                instance_index=instance_index,
+            )
+        )
+        # P5 is speech-driven: keep options visible but disabled.
+        if phase_code == "P5":
+            question = payload.get("question")
+            options = question.get("options") if isinstance(question, dict) else None
+            if not isinstance(options, list):
+                options = payload.get("options") if isinstance(payload.get("options"), list) else []
+            if options:
+                patches.extend(
+                    build_disabled_options_patches(
+                        options,
+                        disabled=True,
+                        instance_index=instance_index,
+                    )
+                )
+                patches.append(
+                    build_game_screen_answer_type_patch(
+                        "button",
+                        instance_index=instance_index,
+                    )
+                )
 
     elif state_upper == "FAIL_L1":
         hint = payload.get("hint") or "Inténtalo de nuevo."

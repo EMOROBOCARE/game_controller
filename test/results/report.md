@@ -1,13 +1,16 @@
 # game_controller ↔ decision_making integration report
 
 - Success: `True`
-- Duration: `36.7s`
+- Duration: `60.2s`
 - ROS_DOMAIN_ID: `43`
 
 ## Artifacts
 - `/test_results/manifest_log.jsonl`
 - `/test_results/decision_state_log.jsonl`
 - `/test_results/decision_event_log.jsonl`
+- `/test_results/topic_audit_log.jsonl`
+- `/test_results/topic_action_stats.json`
+- `/test_results/expressive_say_log.jsonl`
 
 ## Runs
 - `run_a` requested=['P1', 'P2', 'P3'] seen=['P1', 'P2', 'P3'] correct=['P1', 'P2'] fail_once=['P1', 'P2'] exited_early=True
@@ -16,6 +19,8 @@
 
 ## Notes
 - This test publishes UI events to `/ui/input` and bridges them to `/intents` inside the runner container (no browser).
+- Topic audit includes pub/sub activity for `/game/*`, `/ui/input`, `/intents`, `/decision/*`, `/game/current_user`.
+- Action audit validates `/expressive_say` goals through the mock action-server JSONL log.
 - For UI work, see `UI_integration.md` and `GC_integration.md`.
 
 ## Step checklist
@@ -34,4 +39,5 @@
 - `PASS` `run_c_controls_reset_to_P1`
 - `PASS` `run_c_controls_phase_complete_seen`
 - `PASS` `run_c_controls_finished`
+- `PASS` `topic_action_observability_ok`
 

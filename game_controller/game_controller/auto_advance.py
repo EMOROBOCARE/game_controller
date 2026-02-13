@@ -21,6 +21,7 @@ class AutoAdvanceConfig:
     fail_l1: float = 2.0
     fail_l2: float = 2.0
     correct: float = 0.6
+    correct_p1: float = 3.0
     phase_complete: float = 0.3
     
     @classmethod
@@ -33,6 +34,7 @@ class AutoAdvanceConfig:
             fail_l1=float(data.get("fail_l1", 2.0)),
             fail_l2=float(data.get("fail_l2", 2.0)),
             correct=float(data.get("correct", 0.6)),
+            correct_p1=float(data.get("correct_p1", 3.0)),
             phase_complete=float(data.get("phase_complete", 0.3)),
         )
     
@@ -50,6 +52,7 @@ class AutoAdvanceConfig:
             "FAIL_L1": self.fail_l1,
             "FAIL_L2": self.fail_l2,
             "CORRECT": self.correct,
+            "CORRECT_P1": self.correct_p1,
             "PHASE_COMPLETE": self.phase_complete,
         }
         

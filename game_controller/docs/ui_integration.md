@@ -51,9 +51,11 @@ Publish ops:
 - `user_selector` -> `/game/user_selector` (`std_msgs/msg/String`)
 - `game_selector` -> `/game/game_selector` (`std_msgs/msg/String`)
 - `ui_input` -> `/ui/input` (`std_msgs/msg/String`)
+- `volume` -> `/volume` (`std_msgs/msg/Float32`)
 
 Runtime must emit ROS message objects:
 - `runtime.emitUiEvent("ui_input", { data: "<json-string>" })`
+- `runtime.emitUiEvent("volume", { data: 0.65 })`
 
 Examples for `data`:
 - `{"label":"rojo"}`
@@ -81,6 +83,7 @@ Supported controls:
   - `button` for selectable non-matching questions
   - `none` for intro/feedback/non-interactive states
 - `answerOpId`
+- `volumeOpId` (now maps to `volume`)
 - `effect`
 - `pause`
 - telemetry: `state`, `phase`

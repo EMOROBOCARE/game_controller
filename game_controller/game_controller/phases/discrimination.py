@@ -10,7 +10,7 @@ from .base import BasePhaseHandler
 
 
 class DiscriminationPhaseHandler(BasePhaseHandler):
-    """Handler for P1/P2/P3 phases.
+    """Handler for P3 phases.
 
     User selects the correct option from multiple choices.
     Modality defaults to BUTTON but can be overridden via constructor.

@@ -19,6 +19,9 @@ def verify_integration_results():
         "decision_state_log.jsonl",
         "decision_event_log.jsonl",
         "manifest_log.jsonl",
+        "topic_audit_log.jsonl",
+        "topic_action_stats.json",
+        "expressive_say_log.jsonl",
         "manifest_analysis.md",
         "report.md"
     ]
@@ -48,10 +51,31 @@ def verify_integration_results():
         manifest_count = sum(1 for line in f if line.strip())
     print(f"✓ Manifest updates: {manifest_count}")
 
+    with open(results_dir / "topic_audit_log.jsonl") as f:
+        topic_audit_count = sum(1 for line in f if line.strip())
+    print(f"✓ Topic audit rows: {topic_audit_count}")
+
+    with open(results_dir / "expressive_say_log.jsonl") as f:
+        tts_goal_count = sum(1 for line in f if line.strip())
+    print(f"✓ expressive_say goals: {tts_goal_count}")
+
     # Verify minimum counts
     assert state_count >= 50, f"Expected at least 50 states, got {state_count}"
     assert event_count >= 40, f"Expected at least 40 events, got {event_count}"
     assert manifest_count >= 40, f"Expected at least 40 manifest updates, got {manifest_count}"
+    assert topic_audit_count >= 40, f"Expected at least 40 topic audit rows, got {topic_audit_count}"
+    assert tts_goal_count >= 5, f"Expected at least 5 expressive_say goals, got {tts_goal_count}"
+
+    with open(results_dir / "topic_action_stats.json") as f:
+        topic_stats = json.load(f)
+    observed_event_types = set(topic_stats.get("decision_event_types", []))
+    for expected in ("GAME_INIT", "USER_INTENT", "ON_COMPLETE", "GAME_CONTROL"):
+        assert expected in observed_event_types, f"Missing expected decision event type in stats: {expected}"
+
+    tts_stats = topic_stats.get("tts_action", {})
+    assert int(tts_stats.get("goals_count", 0)) >= int(tts_stats.get("question_present_count", 0)), (
+        "expressive_say goals should cover QUESTION_PRESENT states"
+    )
 
     # Load analysis
     print("\nLoading analysis...")

@@ -61,12 +61,31 @@ $COMPOSE up --build
 
 Notes:
 
-- The compose file starts `decision_making`, `game_controller`, `backend`, `web`, and `emorobcare_components_cdn`.
+- The compose file starts `decision_making`, `game_controller`, `llm_service`, `led_service_ros`, `led_service_mock`, `backend`, `web`, and `emorobcare_components_cdn`.
 - Exposed ports:
   - UI web shell: `http://localhost:8083`
   - UI backend: `http://localhost:8092`
   - Components CDN: `http://localhost:8084`
+  - LED mock UI: `http://localhost:8095`
 - Remote modules are expected at `http://localhost:8084/emorobcare-components/assets/remoteEntry.js`.
+
+### Local mock services
+
+- `llm_service` provides `/chatbot/rephrase` and `/chatbot/evaluate_answer` (plus other `/chatbot/*` mock endpoints) for local development.
+- `led_service_ros` runs `emorobcare_led_service`. Set `LED_USE_MOCK=1` (default in compose) to use an in-memory LED backend on laptops without hardware.
+- `led_service_mock` exposes a small web UI that calls `/set_leds`, `/play_effect`, `/control_leds`, and `/get_led_state`.
+
+Service checks:
+
+```bash
+docker compose exec llm_service bash -lc \
+  'source /opt/ros/humble/setup.bash && source /ros2_ws/install/setup.bash && \
+   ros2 service list | grep "^/chatbot/"'
+
+docker compose exec led_service_ros bash -lc \
+  'source /opt/ros/humble/setup.bash && source /ros2_ws/install/setup.bash && \
+   ros2 service list | grep -E "^/(set_leds|play_effect|get_led_state|control_leds)$"'
+```
 
 ## Configuration
 
@@ -154,10 +173,16 @@ $COMPOSE exec game_controller bash -lc \
    ros2 topic pub --once /game/game_selector std_msgs/msg/String "data: \"colores\""'
 
 # 4) Manual debug input path (compose stack)
-# NOTE: /intents expects hri_actions_msgs/Intent; for manual CLI testing use /ui/input.
+# UI publishes /ui/input and communication_hub translates it to /intents.
 $COMPOSE exec game_controller bash -lc \
   'source /opt/ros/humble/setup.bash && source /ros2_ws/install/setup.bash && \
    ros2 topic pub --once /ui/input std_msgs/msg/String "{data: '\''{\"label\":\"SKIP_PHASE\"}'\''}"'
+$COMPOSE exec game_controller bash -lc \
+  'source /opt/ros/humble/setup.bash && source /ros2_ws/install/setup.bash && \
+   ros2 topic pub --once /ui/input std_msgs/msg/String "{data: '\''{\"action\":\"pause\"}'\''}"'
+$COMPOSE exec game_controller bash -lc \
+  'source /opt/ros/humble/setup.bash && source /ros2_ws/install/setup.bash && \
+   ros2 topic pub --once /ui/input std_msgs/msg/String "{data: '\''{\"action\":\"resume\"}'\''}"'
 
 # 5) Observe state and logs
 $COMPOSE exec decision_making bash -lc \
@@ -166,9 +191,32 @@ $COMPOSE exec decision_making bash -lc \
 $COMPOSE logs -f game_controller backend emorobcare_components_cdn web
 ```
 
+Latest live snapshots are stored under `game_controller/test/results/`:
+- `ACTUAL_RUNTIME_STATE.md`
+- `actual_compose_ps.txt`
+- `actual_decision_state.txt`
+- `actual_manifest_response.txt`
+- `actual_runtime_logs_5m.txt`
+
 Expected UI behavior:
 - The first phase (`P1`) is matching mode (`answerType: "match"` / Matching components UI).
 - If `decision_making` omits `phase` in `QUESTION_PRESENT`, `game_controller` reuses the latest phase so P1 still renders matching mode.
+
+### Complete Colores game (P1–P6)
+
+Use this payload to run the full flow:
+
+```bash
+$COMPOSE exec game_controller bash -lc \
+  'source /opt/ros/humble/setup.bash && source /ros2_ws/install/setup.bash && \
+   ros2 topic pub --once /game/game_selector std_msgs/msg/String \
+   "{data: \"{\\\"game\\\":{\\\"slug\\\":\\\"colores\\\"},\\\"difficulty\\\":\\\"basic\\\",\\\"phases\\\":[\\\"P1\\\",\\\"P2\\\",\\\"P3\\\",\\\"P4\\\",\\\"P5\\\",\\\"P6\\\"],\\\"roundsPerPhase\\\":1}\"}"'
+```
+
+Then validate:
+- UI on `http://localhost:8083` advances through P1→P6.
+- `/chatbot/evaluate_answer` and `/chatbot/rephrase` are available (LLM mock).
+- LED mock UI on `http://localhost:8095` reflects `/set_leds`/`/play_effect` activity.
 
 ## Package READMEs
 

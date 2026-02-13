@@ -289,13 +289,12 @@ class TestAutoAdvance:
         start = time.time()
         ROS2Helper.select_game("colores")
         
-        # Should reach WAIT_INPUT within ~5 seconds
-        # PHASE_INTRO (2s) + ROUND_SETUP (0.05s) + QUESTION_PRESENT (0.05s)
+        # Should reach WAIT_INPUT quickly (PHASE_INTRO is auto-skipped).
         state = ROS2Helper.wait_for_state("WAIT_INPUT", timeout=10)
         elapsed = time.time() - start
         
         assert state is not None
-        assert 2.0 <= elapsed <= 8.0, f"Auto-advance took {elapsed}s"
+        assert 0.1 <= elapsed <= 8.0, f"Auto-advance took {elapsed}s"
 
 
 class TestFullGameFlow:

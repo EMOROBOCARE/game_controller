@@ -1,0 +1,2 @@
+data: '{"state": "PAUSED", "gameState": null, "sessionId": 1, "transactionId": 31, "payload": {"gameState": "WAIT_INPUT"}}'
+---

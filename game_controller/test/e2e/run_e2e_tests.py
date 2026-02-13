@@ -377,13 +377,12 @@ class E2ETestSuite:
         start = time.time()
         self.helper.select_game("colores")
         
-        # Should reach WAIT_INPUT within reasonable time
-        # PHASE_INTRO (2s) + ROUND_SETUP (0.05s) + QUESTION_PRESENT (0.05s)
+        # Should reach WAIT_INPUT within reasonable time (PHASE_INTRO is auto-skipped).
         state = self.helper.wait_for_state("WAIT_INPUT", timeout=10)
         elapsed = time.time() - start
         
         assert state is not None, "Game did not reach WAIT_INPUT"
-        assert 2.0 <= elapsed <= 6.0, f"Auto-advance timing off: {elapsed}s"
+        assert 0.1 <= elapsed <= 6.0, f"Auto-advance timing off: {elapsed}s"
     
     def test_retry_then_correct(self) -> None:
         """Test failure -> retry -> correct flow."""

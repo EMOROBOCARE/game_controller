@@ -196,10 +196,18 @@ class TestBuildGameInitPayload:
             "intro": "Test",
             "supportedPhases": ["P3"],
             "answerType": "animals",
-            "phaseConfig": {"P3": {"prompt": "Señala {animal}"}},
+            "phaseConfig": {
+                "P3": {
+                    "text_instructions": "Mira bien.",
+                    "verbal_instructions": "Escucha bien.",
+                    "prompt": "Señala {animal}",
+                }
+            },
         }
         payload = build_game_init_payload(game_content, phases=["P3"], rounds_per_phase=1)
         question = payload["rounds"][0]["question"]
         assert "promptText" in question
         assert "promptVerbal" in question
         assert question["prompt"] == question["promptVerbal"]
+        assert question["promptText"].startswith("Mira bien.")
+        assert question["promptVerbal"].startswith("Escucha bien.")

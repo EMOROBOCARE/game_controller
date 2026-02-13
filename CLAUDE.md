@@ -33,17 +33,30 @@ ros2 launch game_controller game_controller.launch.py
 ## Architecture
 
 ### Data Flow
+```mermaid
+flowchart LR
+  UI["generic_ui web<br/>/ui/input"] --> HUB["communication_hub<br/>ui_intent_bridge"]
+  HUB -->|"/intents (Intent)"| GC["game_controller"]
+  GC -->|"/decision/events"| DM["decision_making"]
+  DM -->|"/decision/state"| GC
+  GC -->|"/generic_ui/update_manifest"| UIB["generic_ui backend"]
+  GC -->|"/expressive_say"| TTS["audio_tts_msgs/Communication"]
+  GC -->|"/chatbot/rephrase<br/>/chatbot/evaluate_answer"| LLM["llm_service"]
+  GC -->|"/play_effect /set_leds"| LED["led_service_ros + led_service_mock"]
+```
+
 1. User selection on `/game/user_selector` and `/game/game_selector`
-2. game_controller loads game JSON and publishes `GAME_INIT` to `/decision/events`
-3. decision_making FSM publishes states to `/decision/state`
-4. game_controller patches UI via `/generic_ui/update_manifest` service
-5. User interacts, UI publishes to `/ui/input`
-6. game_controller translates to `USER_INTENT` or `GAME_CONTROL` events
+2. `game_controller` loads game YAML/JSON and publishes `GAME_INIT` to `/decision/events`
+3. `decision_making` publishes states to `/decision/state`
+4. `game_controller` patches UI via `/generic_ui/update_manifest`
+5. UI interactions are translated by `communication_hub` from `/ui/input` to `/intents`
+6. `game_controller` publishes `USER_INTENT` or `GAME_CONTROL` based on current phase/state
 
 ### Key Design Rules
 - **transactionId gates progression**: Every `/decision/state` has a `transactionId`. Events must reference current transaction or FSM ignores them.
 - **Auto-advance is per transaction**: Timers are keyed by transactionId to prevent duplicates and avoid firing after user input.
-- **UI input only forwarded in answerable states**: Input only forwarded in `WAIT_INPUT` and `FAIL_L1` states.
+- **Intents-only game input**: game_controller reacts to `/intents`, not directly to `/ui/input`.
+- **UI input only forwarded in answerable states**: intents only forwarded in `WAIT_INPUT` and `FAIL_L1` states.
 
 ### Core Code Flow (read in order)
 1. [node.py](game_controller/game_controller/node.py) - Main ROS2 node, callbacks, orchestration
@@ -58,7 +71,7 @@ ros2 launch game_controller game_controller.launch.py
 |-------|-----------|---------|
 | `/decision/state` | Subscribe | Game state updates (JSON) |
 | `/decision/events` | Publish | FSM events: GAME_INIT, USER_INTENT, ON_COMPLETE, GAME_CONTROL |
-| `/ui/input` | Subscribe | User input (JSON) |
+| `/intents` | Subscribe | Normalized intents from `communication_hub` |
 | `/game/game_selector` | Subscribe | Game selection (slug) |
 | `/game/user_selector` | Subscribe | User selection |
 | `/game/current_user` | Publish | Active user |

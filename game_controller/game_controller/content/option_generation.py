@@ -7,6 +7,7 @@ Supports difficulty-based option counts.
 from __future__ import annotations
 
 import random
+import unicodedata
 from typing import Any, Dict, List, Optional
 
 from ..models.difficulty import get_options_count
@@ -25,6 +26,13 @@ DEFAULT_COLORS = [
     {"label": "negro", "image": "assets/color-negro.svg"},
     {"label": "marrón", "image": "assets/color-marron.svg"},
 ]
+
+
+def _normalize_label(value: str) -> str:
+    """Normalize labels for matching and filename-safe slugs."""
+    normalized = unicodedata.normalize("NFKD", value or "")
+    without_accents = "".join(ch for ch in normalized if not unicodedata.combining(ch))
+    return without_accents.strip().lower()
 
 
 def get_options_count_for_difficulty(difficulty: str) -> int:
@@ -62,9 +70,10 @@ def generate_color_options(
     num_options = get_options_count_for_difficulty(difficulty)
 
     # Find the correct color
+    normalized_correct = _normalize_label(correct_color)
     correct_entry = None
     for color in available_colors:
-        if color["label"].lower() == correct_color.lower():
+        if _normalize_label(color["label"]) == normalized_correct:
             correct_entry = color
             break
 
@@ -72,13 +81,13 @@ def generate_color_options(
     if correct_entry is None:
         correct_entry = {
             "label": correct_color,
-            "image": f"assets/color-{correct_color.lower()}.svg",
+            "image": f"assets/color-{normalized_correct}.svg",
         }
 
     # Get distractors (colors that aren't the correct one)
     distractors = [
         c for c in available_colors
-        if c["label"].lower() != correct_color.lower()
+        if _normalize_label(c["label"]) != normalized_correct
     ]
 
     # Select random distractors

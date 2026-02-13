@@ -5,6 +5,7 @@ from __future__ import annotations
 from game_controller.ui import manifest_builder as mb
 from game_controller.ui.manifest_builder import (
     GAME_SCREEN_INSTANCE_ID,
+    build_hint_highlight_patches,
     build_game_screen_options_patch,
     build_instance_config_path,
     build_initial_manifest,
@@ -25,11 +26,15 @@ def test_build_initial_manifest_structure():
     assert "UserPanel" in manifest["componentRegistry"]
     assert "GameSelector" in manifest["componentRegistry"]
     assert "GameComponent" in manifest["componentRegistry"]
+    assert "volume" in manifest["ops"]
 
     instance_ids = [instance["id"] for instance in manifest["instances"]]
     assert instance_ids == ["game_screen", "user_panel"]
     screen_cfg = manifest["instances"][0]["config"]
+    user_panel_cfg = manifest["instances"][1]["config"]
     assert screen_cfg["games"][0]["image"] == "/assets/cards/g1.png"
+    assert screen_cfg["volumeOpId"] == "volume"
+    assert user_panel_cfg["userIconUrl"] == "/emorobcare-components/images/user.png"
 
 
 def test_build_game_screen_options_patch_maps_options():
@@ -70,6 +75,7 @@ def test_build_state_based_patches_question_present():
     payload = {
         "question": {
             "questionId": 11,
+            "promptText": "Texto UI",
             "prompt": "Hola",
             "imageUrl": "image.png",
             "questionType": "multiple_choice",
@@ -94,7 +100,7 @@ def test_build_state_based_patches_question_present():
     manifest = build_initial_manifest()
     game_screen_index = get_instance_index(manifest["instances"], GAME_SCREEN_INSTANCE_ID)
     assert question_patch["path"] == build_instance_config_path(game_screen_index, "question")
-    assert question_patch["value"]["text"] == "Hola"
+    assert question_patch["value"]["text"] == "Texto UI"
     assert question_patch["value"]["img"] == ["/assets/images/image.png"]
     assert question_patch["value"]["imgs"] == ["/assets/images/image.png"]
     assert question_patch["value"]["id"] == 11
@@ -128,10 +134,14 @@ def test_build_state_based_patches_question_present_p1_uses_match():
         },
     }
     patches = build_state_based_patches("QUESTION_PRESENT", payload)
+    question_patch = patches[0]
     answer_type_patch = patches[3]
 
     manifest = build_initial_manifest()
     game_screen_index = get_instance_index(manifest["instances"], GAME_SCREEN_INSTANCE_ID)
+    assert question_patch["path"] == build_instance_config_path(game_screen_index, "question")
+    assert question_patch["value"]["img"] == []
+    assert question_patch["value"]["imgs"] == []
     assert answer_type_patch["path"] == build_instance_config_path(game_screen_index, "answerType")
     assert answer_type_patch["value"] == "match"
 
@@ -179,6 +189,75 @@ def test_build_state_based_patches_question_present_speech_fallback_options():
     assert answer_type_patch["value"] == "button"
 
 
+def test_build_state_based_patches_question_present_p2_keeps_no_options():
+    payload = {
+        "phase": "P2",
+        "question": {
+            "questionId": 31,
+            "promptText": "¿Qué color es?",
+            "questionType": "speech",
+            "answer": "rojo",
+            "options": [],
+        },
+    }
+    patches = build_state_based_patches("QUESTION_PRESENT", payload)
+    options_patch = patches[1]
+    answer_type_patch = patches[3]
+
+    assert options_patch["value"] == []
+    assert answer_type_patch["value"] == "none"
+
+
+def test_build_state_based_patches_question_present_p6_hides_choices():
+    payload = {
+        "phase": "P6",
+        "question": {
+            "questionId": 32,
+            "promptText": "¿Es rojo o azul?",
+            "questionType": "multiple_choice",
+            "answer": "rojo",
+            "options": [
+                {"id": "rojo", "label": "rojo", "correct": True},
+                {"id": "azul", "label": "azul", "correct": False},
+            ],
+        },
+    }
+    patches = build_state_based_patches("QUESTION_PRESENT", payload)
+    options_patch = patches[1]
+    items_patch = patches[2]
+    answer_type_patch = patches[3]
+
+    assert options_patch["value"] == []
+    assert items_patch["value"] == []
+    assert answer_type_patch["value"] == "none"
+
+
+def test_build_state_based_patches_wait_input_p5_keeps_input_disabled():
+    payload = {
+        "phase": "P5",
+        "question": {
+            "options": [
+                {"id": "rojo", "label": "rojo", "imageUrl": "red_circle"},
+                {"id": "azul", "label": "azul", "imageUrl": "blue_circle"},
+            ]
+        },
+    }
+    patches = build_state_based_patches("WAIT_INPUT", payload)
+    input_disabled_patch = [
+        patch for patch in patches if str(patch.get("path", "")).endswith("/inputDisabled")
+    ][-1]
+    options_patch = [
+        patch for patch in patches if str(patch.get("path", "")).endswith("/options")
+    ][-1]
+    items_patch = [
+        patch for patch in patches if str(patch.get("path", "")).endswith("/items")
+    ][-1]
+
+    assert input_disabled_patch["value"] is True
+    assert all(bool(opt.get("disabled")) for opt in options_patch["value"])
+    assert items_patch["value"] == options_patch["value"]
+
+
 def test_build_state_based_patches_p5_highlight():
     payload = {
         "highlighted_ids": ["2"],
@@ -201,6 +280,43 @@ def test_build_state_based_patches_p5_highlight():
     assert highlight_items_patch["value"] == patched_options
     assert patched_options[0]["label"] == "2"
     assert patched_options[0]["highlighted"] is True
+
+
+def test_build_hint_highlight_patches_marks_only_correct_option():
+    options = [
+        {"id": "1", "label": "uno", "imageUrl": "uno.png"},
+        {"id": "2", "label": "dos", "imageUrl": "dos.png"},
+    ]
+    patches = build_hint_highlight_patches(options, "2")
+    assert len(patches) == 2
+
+    highlighted = patches[0]["value"]
+    assert highlighted[0]["id"] == "1"
+    assert highlighted[0].get("highlighted", False) is False
+    assert highlighted[1]["id"] == "2"
+    assert highlighted[1]["highlighted"] is True
+
+
+def test_build_hint_highlight_patches_returns_empty_without_match():
+    options = [
+        {"id": "1", "label": "uno"},
+        {"id": "2", "label": "dos"},
+    ]
+    patches = build_hint_highlight_patches(options, "missing")
+    assert patches == []
+
+
+def test_build_hint_highlight_patches_uses_correct_flag_when_id_missing():
+    options = [
+        {"id": "1", "label": "uno", "correct": False},
+        {"id": "2", "label": "dos", "correct": True},
+    ]
+    patches = build_hint_highlight_patches(options, None)
+
+    assert len(patches) == 2
+    highlighted = patches[0]["value"]
+    assert highlighted[0].get("highlighted", False) is False
+    assert highlighted[1]["highlighted"] is True
 
 
 def test_component_registry_remote_entry_from_base_env(monkeypatch):

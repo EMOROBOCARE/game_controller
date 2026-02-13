@@ -31,6 +31,7 @@ services:
 
   # Game Controller - Orchestration
   game_controller:
+    image: game_controller_runtime:latest
     build:
       context: ..
       dockerfile: game_controller/game_controller/Dockerfile.compose
@@ -51,6 +52,12 @@ services:
     depends_on:
       decision_making:
         condition: service_healthy
+      communication_hub:
+        condition: service_healthy
+      llm_service:
+        condition: service_healthy
+      led_service_ros:
+        condition: service_healthy
     networks:
       - rosnet
     healthcheck:
@@ -59,6 +66,90 @@ services:
       timeout: 10s
       retries: 10
       start_period: 15s
+
+  communication_hub:
+    image: game_controller_runtime:latest
+    build:
+      context: ..
+      dockerfile: game_controller/game_controller/Dockerfile.compose
+      network: host
+    environment:
+      ROS_DOMAIN_ID: 0
+    command: ["ros2", "run", "communication_hub", "ui_intent_bridge"]
+    networks:
+      - rosnet
+    healthcheck:
+      test: ["CMD", "bash", "-c", "source /opt/ros/humble/setup.bash && source /ros2_ws/install/setup.bash && ros2 node list | grep -q communication_hub_ui_intent_bridge"]
+      interval: 5s
+      timeout: 10s
+      retries: 10
+      start_period: 10s
+
+  # Mock LLM services for /chatbot/*
+  llm_service:
+    image: game_controller_runtime:latest
+    build:
+      context: ..
+      dockerfile: game_controller/game_controller/Dockerfile.compose
+      network: host
+    environment:
+      ROS_DOMAIN_ID: 0
+    command: ["ros2", "run", "llm_service_mock", "llm_service_mock_node"]
+    networks:
+      - rosnet
+    healthcheck:
+      test: ["CMD", "bash", "-c", "source /opt/ros/humble/setup.bash && source /ros2_ws/install/setup.bash && ros2 service list | grep -q /chatbot/rephrase"]
+      interval: 5s
+      timeout: 10s
+      retries: 10
+      start_period: 10s
+
+  # LED ROS service (mock backend when hardware is unavailable)
+  led_service_ros:
+    image: game_controller_runtime:latest
+    build:
+      context: ..
+      dockerfile: game_controller/game_controller/Dockerfile.compose
+      network: host
+    environment:
+      ROS_DOMAIN_ID: 0
+      LED_USE_MOCK: "${LED_USE_MOCK:-1}"
+      LED_NUM_LEDS: "${LED_NUM_LEDS:-5}"
+    command: ["ros2", "run", "emorobcare_led_service", "led_service_node"]
+    networks:
+      - rosnet
+    healthcheck:
+      test: ["CMD", "bash", "-c", "source /opt/ros/humble/setup.bash && source /ros2_ws/install/setup.bash && ros2 service list | grep -q /set_leds"]
+      interval: 5s
+      timeout: 10s
+      retries: 10
+      start_period: 10s
+
+  # Simple web UI that interacts with led_service_ros
+  led_service_mock:
+    image: game_controller_runtime:latest
+    build:
+      context: ..
+      dockerfile: game_controller/game_controller/Dockerfile.compose
+      network: host
+    environment:
+      ROS_DOMAIN_ID: 0
+      LED_MOCK_UI_HOST: "0.0.0.0"
+      LED_MOCK_UI_PORT: 8095
+    command: ["ros2", "run", "led_service_mock", "led_service_mock_node"]
+    depends_on:
+      led_service_ros:
+        condition: service_healthy
+    ports:
+      - "8095:8095"
+    networks:
+      - rosnet
+    healthcheck:
+      test: ["CMD", "bash", "-c", "python3 -c \"import urllib.request; urllib.request.urlopen('http://localhost:8095/healthz', timeout=2)\""]
+      interval: 5s
+      timeout: 10s
+      retries: 10
+      start_period: 10s
 
   # Generic UI Backend
   backend:

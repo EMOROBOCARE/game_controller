@@ -77,7 +77,8 @@ Supported fields used by builder:
 2. Merges `phaseConfig` with shared defaults.
 3. Loads answer pool via `answerType`.
 4. Generates round/question options per phase and difficulty.
-5. Produces `GAME_INIT.payload` with:
+5. Prefixes each generated `promptText` / `promptVerbal` with phase instructions (`text_instructions` / `verbal_instructions`).
+6. Produces `GAME_INIT.payload` with:
 - `phaseSequence`
 - `phaseConfigs`
 - `rounds[]`

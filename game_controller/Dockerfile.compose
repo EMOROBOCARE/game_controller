@@ -8,10 +8,11 @@ ENV DEBIAN_FRONTEND=noninteractive
 RUN apt-get update && apt-get install -y --no-install-recommends \
     python3-pip \
     python3-colcon-common-extensions \
+    ros-humble-ament-cmake-python \
     && rm -rf /var/lib/apt/lists/*
 
 # Install Python dependencies
-RUN pip3 install --no-cache-dir pydantic pyyaml
+RUN pip3 install --no-cache-dir pydantic pyyaml flask
 
 # Create workspace
 WORKDIR /ros2_ws/src
@@ -22,8 +23,21 @@ COPY generic_ui/ros2/generic_ui_interfaces /ros2_ws/src/generic_ui_interfaces
 # Copy message interfaces used by game_controller (/intents).
 COPY refactored_game/extra_ros2_packages/hri_actions_msgs /ros2_ws/src/hri_actions_msgs
 
+# Copy chatbot service interfaces.
+COPY game_controller/game_controller/stub_chatbot_msgs /ros2_ws/src/chatbot_msgs
+
 # Copy audio_tts_msgs for expressive TTS action integration (/expressive_say).
 COPY refactored_game/extra_ros2_packages/audio_tts_msgs /ros2_ws/src/audio_tts_msgs
+
+# Copy LED service ROS package.
+COPY game_controller/leds_ros /ros2_ws/src/emorobcare_led_service
+
+# Copy mock service packages.
+COPY game_controller/llm_service_mock /ros2_ws/src/llm_service_mock
+COPY game_controller/led_service_mock /ros2_ws/src/led_service_mock
+
+# Copy communication_hub package (UI->Intent translator).
+COPY game_controller/communication_hub /ros2_ws/src/communication_hub
 
 # Copy game_controller package
 COPY game_controller/game_controller /ros2_ws/src/game_controller
@@ -31,7 +45,16 @@ COPY game_controller/game_controller /ros2_ws/src/game_controller
 # Build workspace
 WORKDIR /ros2_ws
 RUN . /opt/ros/humble/setup.sh && \
-    colcon build --symlink-install --packages-select generic_ui_interfaces hri_actions_msgs audio_tts_msgs game_controller
+    colcon build --symlink-install --packages-select \
+      generic_ui_interfaces \
+      hri_actions_msgs \
+      chatbot_msgs \
+      audio_tts_msgs \
+      emorobcare_led_service \
+      llm_service_mock \
+      led_service_mock \
+      communication_hub \
+      game_controller
 
 # Wrapper script for ros2 command
 RUN printf '%s\n' \

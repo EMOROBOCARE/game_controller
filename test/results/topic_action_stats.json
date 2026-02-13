@@ -1,0 +1,30 @@
+{
+  "topic_counts": {
+    "sub:/decision/state": 72,
+    "pub:/game/user_selector": 3,
+    "pub:/game/game_selector": 3,
+    "sub:/game/current_user": 3,
+    "sub:/decision/events": 71,
+    "pub:/ui/input": 23,
+    "sub:/ui/input": 23,
+    "pub:/intents": 23,
+    "sub:/intents": 23
+  },
+  "captured_messages": {
+    "decision_state": 72,
+    "decision_events": 71,
+    "intents": 23,
+    "current_user": 3
+  },
+  "decision_event_types": [
+    "GAME_CONTROL",
+    "GAME_INIT",
+    "ON_COMPLETE",
+    "USER_INTENT"
+  ],
+  "tts_action": {
+    "log_path": "/test_results/expressive_say_log.jsonl",
+    "goals_count": 21,
+    "question_present_count": 13
+  }
+}

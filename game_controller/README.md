@@ -9,6 +9,7 @@ ROS 2 package that orchestrates Colors/Colores sessions between `decision_making
 - tracks `/decision/state`
 - patches UI manifest state
 - translates intents to FSM events
+- performs speech-only semantic answer evaluation via chatbot when needed
 - schedules `ON_COMPLETE`
 
 Game logic transitions remain owned by `decision_making`.
@@ -28,6 +29,8 @@ Game logic transitions remain owned by `decision_making`.
 
 ### Service Client
 - `/generic_ui/update_manifest` (`generic_ui_interfaces/srv/UpdateManifest`)
+- `/chatbot/rephrase` (`chatbot_msgs/srv/Rephrase`, optional)
+- `/chatbot/evaluate_answer` (`chatbot_msgs/srv/EvaluateAnswer`, optional)
 
 ## Manifest Model
 The controller publishes a stable manifest with two instances:
@@ -35,6 +38,13 @@ The controller publishes a stable manifest with two instances:
 - `game_screen` (switches between `GameSelector` and `GameComponent`)
 
 State updates are sent as JSON Patch operations against `game_screen.config`.
+
+Current flow details:
+- `PHASE_INTRO` is auto-skipped (no separate intro screen)
+- per-phase `text_instructions`/`verbal_instructions` are prepended to each generated question
+- `QUESTION_PRESENT` speech uses `/expressive_say` and can rephrase prompts safely
+- `CORRECT` speech uses game `positive_feedback.fewshot_examples` with optional rephrase
+- `GameComponent.config.volumeOpId` publishes directly to `/volume` (`std_msgs/msg/Float32`)
 
 ## Quick Start
 ```bash
@@ -70,6 +80,11 @@ Notes:
 - E2E container targeting is service-based (no hardcoded container names).
 - E2E tests skip with explicit prerequisite reasons when docker stack context is unavailable.
 - `E2E_MANAGE_STACK=1` makes `test_game_flow_e2e.py` own stack lifecycle for standalone runs.
+
+## Local Compose Services
+- `llm_service`: mock `/chatbot/rephrase` and `/chatbot/evaluate_answer`.
+- `led_service_ros`: `/set_leds`, `/play_effect`, `/get_led_state`, `/control_leds` (mock backend by default).
+- `led_service_mock`: LED web UI on `http://localhost:8095`.
 
 ## Manual Input Debug
 For compose-only manual testing, publish UI payloads to `/ui/input`:

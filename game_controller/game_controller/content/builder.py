@@ -133,6 +133,44 @@ def _fallback_prompt(phase: str, phase_cfg: Dict[str, Any], values: Dict[str, An
     return "Elige una opción.", "Elige una opción."
 
 
+def _phase_instruction(phase_cfg: Dict[str, Any], verbal: bool) -> str:
+    if not isinstance(phase_cfg, dict):
+        return ""
+    if verbal:
+        value = (
+            phase_cfg.get("verbal_instructions")
+            or phase_cfg.get("verbalInstructions")
+            or phase_cfg.get("text_instructions")
+            or phase_cfg.get("textInstructions")
+        )
+    else:
+        value = (
+            phase_cfg.get("text_instructions")
+            or phase_cfg.get("textInstructions")
+            or phase_cfg.get("verbal_instructions")
+            or phase_cfg.get("verbalInstructions")
+        )
+    if value is None:
+        return ""
+    return str(value).strip()
+
+
+def _compose_instruction_prompt(instruction: str, question_prompt: str) -> str:
+    intro = str(instruction or "").strip()
+    prompt = str(question_prompt or "").strip()
+    if not intro:
+        return prompt
+    if not prompt:
+        return intro
+    intro_lower = intro.lower()
+    prompt_lower = prompt.lower()
+    if prompt_lower == intro_lower or prompt_lower.startswith(intro_lower):
+        return prompt
+    if intro.endswith((".", "?", "!", ":", ";")):
+        return f"{intro} {prompt}".strip()
+    return f"{intro}. {prompt}".strip()
+
+
 def _normalize_answer_items(raw: Any) -> List[Dict[str, Any]]:
     """Normalize answer items into a consistent shape."""
     if not isinstance(raw, list):
@@ -245,6 +283,8 @@ def _generate_rounds_from_answers(
         phase_cfg = phase_configs.get(phase_upper, {})
         prompt_verbal_tmpl = phase_cfg.get("promptVerbal") or phase_cfg.get("prompt_verbal") or phase_cfg.get("prompt")
         prompt_text_tmpl = phase_cfg.get("promptText") or phase_cfg.get("prompt_text") or prompt_verbal_tmpl
+        verbal_instruction = _phase_instruction(phase_cfg, verbal=True)
+        text_instruction = _phase_instruction(phase_cfg, verbal=False)
 
         # Shuffle per phase to reduce repetition.
         phase_items = list(all_items)
@@ -297,6 +337,8 @@ def _generate_rounds_from_answers(
                     prompt_text = _safe_format(prompt_text_tmpl, values)
                     if not str(prompt_verbal).strip():
                         prompt_text, prompt_verbal = _fallback_prompt(phase_upper, phase_cfg, values)
+                    prompt_text = _compose_instruction_prompt(text_instruction, prompt_text)
+                    prompt_verbal = _compose_instruction_prompt(verbal_instruction, prompt_verbal)
                     options = generate_yes_no_options(yes_no)
 
                     rounds.append(
@@ -400,6 +442,8 @@ def _generate_rounds_from_answers(
             prompt_text = _safe_format(prompt_text_tmpl, values)
             if not str(prompt_verbal).strip():
                 prompt_text, prompt_verbal = _fallback_prompt(phase_upper, phase_cfg, values)
+            prompt_text = _compose_instruction_prompt(text_instruction, prompt_text)
+            prompt_verbal = _compose_instruction_prompt(verbal_instruction, prompt_verbal)
 
             rounds.append(
                 {

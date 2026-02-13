@@ -1,0 +1,7 @@
+string sentence
+string[] forbidden_expressions
+int32 n_alternatives
+---
+bool success
+string message
+string[] alternatives

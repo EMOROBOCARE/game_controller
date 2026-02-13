@@ -1,0 +1,10 @@
+NAME                                          STATUS                    PORTS
+game_controller-backend-1                     Up 2 hours                0.0.0.0:8092->8080/tcp, [::]:8092->8080/tcp
+game_controller-communication_hub-1           Up 49 minutes (healthy)   
+game_controller-decision_making-1             Up 2 hours (healthy)      
+game_controller-emorobcare_components_cdn-1   Up 2 hours                0.0.0.0:8084->80/tcp, [::]:8084->80/tcp
+game_controller-game_controller-1             Up 48 minutes (healthy)   
+game_controller-led_service_mock-1            Up 50 minutes (healthy)   0.0.0.0:8095->8095/tcp, [::]:8095->8095/tcp
+game_controller-led_service_ros-1             Up 49 minutes (healthy)   
+game_controller-llm_service-1                 Up 49 minutes (healthy)   
+game_controller-web-1                         Up 2 hours                0.0.0.0:8083->80/tcp, [::]:8083->80/tcp

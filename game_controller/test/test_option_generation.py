@@ -45,6 +45,40 @@ def test_generate_color_options_unknown_color():
     assert correct["imageUrl"] == "assets/color-morado.svg"
 
 
+def test_generate_color_options_accented_color_matches_available_label():
+    colors = [
+        {"label": "marrón", "image": "assets/color-marron.svg"},
+        {"label": "rojo", "image": "assets/color-rojo.svg"},
+    ]
+    random.seed(4)
+    options = generate_color_options(
+        "marron",
+        difficulty="basic",
+        available_colors=colors,
+        shuffle=False,
+    )
+    correct = next(opt for opt in options if opt["correct"])
+    assert correct["label"] == "marrón"
+    assert correct["imageUrl"] == "assets/color-marron.svg"
+
+
+def test_generate_color_options_accented_fallback_image_slug():
+    colors = [
+        {"label": "rojo", "image": "rojo.svg"},
+        {"label": "verde", "image": "verde.svg"},
+    ]
+    random.seed(5)
+    options = generate_color_options(
+        "marrón",
+        difficulty="basic",
+        available_colors=colors,
+        shuffle=False,
+    )
+    correct = next(opt for opt in options if opt["correct"])
+    assert correct["label"] == "marrón"
+    assert correct["imageUrl"] == "assets/color-marron.svg"
+
+
 def test_generate_yes_no_options_correct_no():
     options = generate_yes_no_options("no")
     assert any(opt["id"] == "no" and opt["correct"] for opt in options)

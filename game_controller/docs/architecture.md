@@ -24,6 +24,8 @@ Responsibilities:
   - `/game/current_user`
 - Calls service:
   - `/generic_ui/update_manifest`
+  - `/chatbot/rephrase` (optional)
+  - `/chatbot/evaluate_answer` (optional)
 
 ### Content Pipeline
 Files:
@@ -51,6 +53,7 @@ Recommended path:
 - UI publishes `/ui/input` (`std_msgs/String`)
 - `communication_hub` converts to `/intents` (`hri_actions_msgs/Intent`)
 - `game_controller` translates to `USER_INTENT` or `GAME_CONTROL`
+- UI volume events publish to `/volume` (`std_msgs/Float32`) via manifest op `volume`
 
 Debug path:
 - Publish directly to `/ui/input` in compose stacks that do not include `communication_hub`.
@@ -79,3 +82,8 @@ For browser rendering with current controller manifests, `generic_ui/emorobcare_
 - `./GameSelector` and `./GameComponent`
 
 with federation scope `demo` and remote entry `/emorobcare-components/assets/remoteEntry.js`.
+
+For local docker-compose development, the stack also includes:
+- `llm_service` (mock chatbot services)
+- `led_service_ros` (LED ROS service with `LED_USE_MOCK=1` by default)
+- `led_service_mock` (web UI on `http://localhost:8095` for LED interaction/debug)

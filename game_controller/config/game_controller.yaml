@@ -22,13 +22,27 @@ generic_ui:
 # Auto-advance timeouts (in seconds)
 # These are the delays before sending ON_COMPLETE for non-interactive states
 auto_advance:
-  phase_intro: 2.0
+  phase_intro: 0.0
   round_setup: 0.05
   question_present: 0.05
   fail_l1: 2.0
   fail_l2: 2.0
   correct: 0.6
   phase_complete: 0.3
+
+# Chatbot integration
+chatbot:
+  enabled: true
+  rephrase_service: "/chatbot/rephrase"
+  evaluate_service: "/chatbot/evaluate_answer"
+  service_wait_timeout_sec: 0.05
+  evaluate_speech_only: true
+
+# TTS post-processing
+tts:
+  enabled: true
+  rephrase_question_enabled: true
+  rephrase_correct_enabled: true
 
 # Game defaults
 game_defaults:

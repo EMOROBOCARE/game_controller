@@ -1,0 +1,474 @@
+{
+  "version": 1,
+  "componentRegistry": {
+    "UserPanel": {
+      "url": "http://localhost:8084/emorobcare-components/assets/remoteEntry.js?v=20260210",
+      "scope": "demo",
+      "module": "./UserPanel"
+    },
+    "GameSelector": {
+      "url": "http://localhost:8084/emorobcare-components/assets/remoteEntry.js?v=20260210",
+      "scope": "demo",
+      "module": "./GameSelector"
+    },
+    "GameComponent": {
+      "url": "http://localhost:8084/emorobcare-components/assets/remoteEntry.js?v=20260210",
+      "scope": "demo",
+      "module": "./GameComponent"
+    }
+  },
+  "ops": {
+    "game_selector": {
+      "kind": "topic_pub",
+      "rosType": "std_msgs/msg/String",
+      "topic": "/game/game_selector"
+    },
+    "user_selector": {
+      "kind": "topic_pub",
+      "rosType": "std_msgs/msg/String",
+      "topic": "/game/user_selector"
+    },
+    "ui_input": {
+      "kind": "topic_pub",
+      "rosType": "std_msgs/msg/String",
+      "topic": "/ui/input"
+    },
+    "volume": {
+      "kind": "topic_pub",
+      "rosType": "std_msgs/msg/Float32",
+      "topic": "/volume"
+    },
+    "ui_trace": {
+      "kind": "topic_pub",
+      "rosType": "std_msgs/msg/Empty",
+      "topic": "/ui/tracing"
+    },
+    "current_user": {
+      "kind": "topic_sub",
+      "rosType": "std_msgs/msg/Int16",
+      "topic": "/game/current_user"
+    },
+    "decision_state": {
+      "kind": "topic_sub",
+      "rosType": "std_msgs/msg/String",
+      "topic": "/decision/state"
+    },
+    "ui_update": {
+      "kind": "topic_sub",
+      "rosType": "std_msgs/msg/String",
+      "topic": "/ui/update"
+    }
+  },
+  "layout": {
+    "mode": "grid",
+    "columns": 12,
+    "items": [
+      {
+        "instanceId": "user_panel",
+        "col": 1,
+        "row": 1,
+        "colSpan": 12,
+        "rowSpan": 1
+      },
+      {
+        "instanceId": "game_screen",
+        "col": 1,
+        "row": 2,
+        "colSpan": 12,
+        "rowSpan": 6
+      }
+    ]
+  },
+  "instances": [
+    {
+      "id": "game_screen",
+      "component": "GameComponent",
+      "config": {
+        "mode": "game",
+        "startGameOpId": "game_selector",
+        "uiInputOpId": "ui_input",
+        "games": [
+          {
+            "slug": "animales",
+            "title": "Animales",
+            "image": "http://localhost:8084/emorobcare-components/images/animales.png",
+            "intro": "Vamos a jugar a los animales.",
+            "available": true,
+            "levels": [
+              {
+                "name": "Nivel 1",
+                "id": 1
+              }
+            ],
+            "supportedPhases": [
+              "P1",
+              "P2",
+              "P3",
+              "P4",
+              "P5",
+              "P6"
+            ],
+            "difficulties": {
+              "basic": {
+                "level": "basic",
+                "optionsCount": 2
+              },
+              "intermediate": {
+                "level": "intermediate",
+                "optionsCount": 3
+              },
+              "advanced": {
+                "level": "advanced",
+                "optionsCount": 4
+              }
+            },
+            "gameType": null,
+            "specialHandler": null,
+            "requires": []
+          },
+          {
+            "slug": "atencion",
+            "title": "Atención",
+            "image": "http://localhost:8084/emorobcare-components/images/atencion.png",
+            "intro": "Vamos a jugar a la atención.",
+            "available": true,
+            "levels": [
+              {
+                "name": "Nivel 1",
+                "id": 1
+              }
+            ],
+            "supportedPhases": [
+              "P3"
+            ],
+            "difficulties": {
+              "basic": {
+                "level": "basic",
+                "optionsCount": 2
+              },
+              "intermediate": {
+                "level": "intermediate",
+                "optionsCount": 3
+              },
+              "advanced": {
+                "level": "advanced",
+                "optionsCount": 4
+              }
+            },
+            "gameType": null,
+            "specialHandler": null,
+            "requires": []
+          },
+          {
+            "slug": "colores",
+            "title": "Colores",
+            "image": "http://localhost:8084/emorobcare-components/images/colores.png",
+            "intro": "Vamos a jugar a los colores.",
+            "available": true,
+            "levels": [
+              {
+                "name": "Nivel 1",
+                "id": 1
+              }
+            ],
+            "supportedPhases": [
+              "P1",
+              "P2",
+              "P3",
+              "P4",
+              "P5",
+              "P6"
+            ],
+            "difficulties": {
+              "basic": {
+                "level": "basic",
+                "optionsCount": 2
+              },
+              "intermediate": {
+                "level": "intermediate",
+                "optionsCount": 3
+              },
+              "advanced": {
+                "level": "advanced",
+                "optionsCount": 4
+              }
+            },
+            "gameType": null,
+            "specialHandler": null,
+            "requires": [
+              "chatbot",
+              "tts"
+            ]
+          },
+          {
+            "slug": "donde_esta",
+            "title": "¿Dónde está?",
+            "image": "http://localhost:8084/emorobcare-components/images/donde_esta.png",
+            "intro": "Vamos a jugar a dónde está.",
+            "available": true,
+            "levels": [
+              {
+                "name": "Nivel 1",
+                "id": 1
+              }
+            ],
+            "supportedPhases": [
+              "P1",
+              "P2",
+              "P3",
+              "P4",
+              "P5",
+              "P6"
+            ],
+            "difficulties": {
+              "basic": {
+                "level": "basic",
+                "optionsCount": 2
+              },
+              "intermediate": {
+                "level": "intermediate",
+                "optionsCount": 3
+              },
+              "advanced": {
+                "level": "advanced",
+                "optionsCount": 4
+              }
+            },
+            "gameType": null,
+            "specialHandler": null,
+            "requires": []
+          },
+          {
+            "slug": "emociones",
+            "title": "Emociones",
+            "image": "http://localhost:8084/emorobcare-components/images/emociones.png",
+            "intro": "Vamos a jugar a las emociones.",
+            "available": true,
+            "levels": [
+              {
+                "name": "Nivel 1",
+                "id": 1
+              }
+            ],
+            "supportedPhases": [
+              "P1",
+              "P2",
+              "P3",
+              "P4",
+              "P5",
+              "P6"
+            ],
+            "difficulties": {
+              "basic": {
+                "level": "basic",
+                "optionsCount": 2
+              },
+              "intermediate": {
+                "level": "intermediate",
+                "optionsCount": 3
+              },
+              "advanced": {
+                "level": "advanced",
+                "optionsCount": 4
+              }
+            },
+            "gameType": null,
+            "specialHandler": null,
+            "requires": []
+          },
+          {
+            "slug": "encuentra_objetos",
+            "title": "Encuentra Objetos",
+            "image": "http://localhost:8084/emorobcare-components/images/encuentra_objetos.png",
+            "intro": "Vamos a buscar objetos.",
+            "available": true,
+            "levels": [
+              {
+                "name": "Nivel 1",
+                "id": 1
+              }
+            ],
+            "supportedPhases": [
+              "P3"
+            ],
+            "difficulties": {
+              "basic": {
+                "level": "basic",
+                "optionsCount": 2
+              },
+              "intermediate": {
+                "level": "intermediate",
+                "optionsCount": 3
+              },
+              "advanced": {
+                "level": "advanced",
+                "optionsCount": 4
+              }
+            },
+            "gameType": null,
+            "specialHandler": null,
+            "requires": []
+          },
+          {
+            "slug": "formas",
+            "title": "Formas",
+            "image": "http://localhost:8084/emorobcare-components/images/formas.png",
+            "intro": "Vamos a jugar a las formas.",
+            "available": true,
+            "levels": [
+              {
+                "name": "Nivel 1",
+                "id": 1
+              }
+            ],
+            "supportedPhases": [
+              "P1",
+              "P2",
+              "P3",
+              "P4",
+              "P5",
+              "P6"
+            ],
+            "difficulties": {
+              "basic": {
+                "level": "basic",
+                "optionsCount": 2
+              },
+              "intermediate": {
+                "level": "intermediate",
+                "optionsCount": 3
+              },
+              "advanced": {
+                "level": "advanced",
+                "optionsCount": 4
+              }
+            },
+            "gameType": null,
+            "specialHandler": null,
+            "requires": []
+          },
+          {
+            "slug": "quiero",
+            "title": "Quiero",
+            "image": "http://localhost:8084/emorobcare-components/images/quiero.png",
+            "intro": "Vamos a jugar a decir qué quiero.",
+            "available": true,
+            "levels": [
+              {
+                "name": "Nivel 1",
+                "id": 1
+              }
+            ],
+            "supportedPhases": [
+              "P6"
+            ],
+            "difficulties": {
+              "basic": {
+                "level": "basic",
+                "optionsCount": 2
+              },
+              "intermediate": {
+                "level": "intermediate",
+                "optionsCount": 3
+              },
+              "advanced": {
+                "level": "advanced",
+                "optionsCount": 4
+              }
+            },
+            "gameType": "special",
+            "specialHandler": "quiero",
+            "requires": []
+          }
+        ],
+        "username": "",
+        "round": 0,
+        "inputDisabled": false,
+        "controls": {
+          "showPause": true,
+          "showResume": false,
+          "showStop": true,
+          "showReset": true,
+          "showSkipPhase": true
+        },
+        "effect": "none",
+        "question": {
+          "id": 0,
+          "text": "",
+          "img": [],
+          "imgs": []
+        },
+        "answerOpId": "ui_input",
+        "answerType": "none",
+        "items": [],
+        "options": [],
+        "pause": false,
+        "gameFlowOpId": "ui_input",
+        "volumeOpId": "volume",
+        "state": {
+          "system": "GAME",
+          "gameState": "WAIT_INPUT",
+          "sessionId": 1,
+          "transactionId": 4
+        },
+        "phase": ""
+      },
+      "capabilities": [
+        "ui_input",
+        "volume",
+        "game_selector",
+        "decision_state",
+        "ui_update",
+        "ui_trace"
+      ],
+      "bindings": {
+        "game_selector": "game_selector",
+        "startGame": "game_selector",
+        "ui_input": "ui_input",
+        "answer": "ui_input",
+        "gameFlow": "ui_input",
+        "volume": "volume",
+        "click": "ui_trace",
+        "select": "ui_trace"
+      }
+    },
+    {
+      "id": "user_panel",
+      "component": "UserPanel",
+      "config": {
+        "users": [
+          {
+            "id": "1",
+            "name": "Pepe"
+          },
+          {
+            "id": "2",
+            "name": "María"
+          },
+          {
+            "id": "3",
+            "name": "Juan"
+          }
+        ],
+        "userPanelOpId": "user_selector",
+        "disabled": false,
+        "userIconUrl": "http://localhost:8084/emorobcare-components/images/user.png",
+        "activeUser": {
+          "id": "1",
+          "name": "Pepe"
+        }
+      },
+      "capabilities": [
+        "user_selector"
+      ],
+      "bindings": {
+        "user_selector": "user_selector"
+      }
+    }
+  ],
+  "ui": {
+    "chrome": "kiosk",
+    "rowHeightPx": 96,
+    "background": "#f5f0e8"
+  }
+}

@@ -90,12 +90,20 @@ Accepted command set:
 Timer configuration is read from `auto_advance.*` parameters.
 
 Special case:
+- `PHASE_INTRO` is auto-skipped by default (`auto_advance.phase_intro = 0.0`).
 - In `QUESTION_PRESENT`, controller can gate `ON_COMPLETE` on `/expressive_say` completion when TTS is enabled and prompt is non-empty.
+- In `CORRECT`, controller can also gate `ON_COMPLETE` on spoken feedback completion.
 - If that gate is not used, it falls back to timer-based `ON_COMPLETE`.
 
 ## Input Gating
 `game_controller` only forwards answers when current game state is:
 - `WAIT_INPUT`
-- `FAIL_L1`
+
+Speech inputs without an explicit `correct` field are semantically evaluated via `/chatbot/evaluate_answer` before publishing `USER_INTENT`.
+
+## Service Use During Flow
+- `QUESTION_PRESENT` / `CORRECT`: prompt/feedback may be rephrased via `/chatbot/rephrase` (when enabled).
+- `WAIT_INPUT` (speech modality): semantic correctness may be resolved via `/chatbot/evaluate_answer`.
+- Correct answers trigger UI `effect="confetti"` and continue on `ON_COMPLETE`.
 
 Control commands are accepted independently of answer gating.
